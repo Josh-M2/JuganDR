@@ -13,9 +13,11 @@ const Logout: React.FC = () => {
           }
         );
       } catch (error: any) {
-        throw new Error("Logout failed");
+        console.log("Logout failed");
+        // throw new Error("Logout failed");
       }
       localStorage.removeItem("isAuthenticated"); // Remove auth flag
+      localStorage.removeItem("BearerToken");
       window.location.reload(); // Reload the app to reflect logout state
     } catch (error) {
       console.error("Logout failed");
