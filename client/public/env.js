@@ -65,6 +65,8 @@ window.env = {
   "PSModulePath": "C:\\Users\\joshu\\OneDrive\\Documents\\WindowsPowerShell\\Modules;C:\\Program Files\\WindowsPowerShell\\Modules;C:\\Windows\\system32\\WindowsPowerShell\\v1.0\\Modules;C:\\Program Files (x86)\\Microsoft SQL Server\\160\\Tools\\PowerShell\\Modules\\",
   "PUBLIC": "C:\\Users\\Public",
   "REACT_APP_SERVER_ACCESS": "http://localhost:3000/",
+  "REACT_APP_SUPABASE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyeGFsa3R2ZGludW5leGd2dGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjMyODM5OTQsImV4cCI6MjAzODg1OTk5NH0.l35x0D20NIAf9lu8ElEcSBCQ1n0bEQCMlOUVnb8UkHI",
+  "REACT_APP_SUPABASE_URL": "https://zrxalktvdinunexgvtgg.supabase.co",
   "SESSIONNAME": "Console",
   "SystemDrive": "C:",
   "SystemRoot": "C:\\Windows",

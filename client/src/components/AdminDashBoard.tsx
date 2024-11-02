@@ -19,6 +19,7 @@ import {
   useToast,
   Select,
   Tooltip,
+  Image,
 } from "@chakra-ui/react";
 import React, { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -43,6 +44,7 @@ import {
 } from "docx";
 import logoJugan from "./../assets/Jugan-logo.png";
 import logoConsolacion from "./../assets/Consolacion-logo.png";
+import { url } from "inspector";
 
 const urlEnv = process.env.REACT_APP_SERVER_ACCESS;
 
@@ -61,6 +63,8 @@ interface data {
   street: string;
   document: string;
   released_date: string;
+  front_id: string;
+  back_id: string;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -85,9 +89,18 @@ const AdminDashboard: React.FC = () => {
   const [loadingDeleteIncoming, setLoadingDeleteIncoming] = useState(false);
   const [loadingSendToOutgoing, setLoadingSendToOutgoing] = useState(false);
   const [loadingSendToReleased, setLoadingSendToReleased] = useState(false);
-
+  const [frontIDUrl, setFrontIDUrl] = useState<string | null>(null);
+  const [backIDUrl, setBackIDUrl] = useState<string | null>(null);
+  const [loadingImageUrl, setLoadingImageUrl] = useState(false);
+  const [images, setImages] = useState<{
+    frontID: string;
+    backID: string;
+  } | null>(null);
   const [selectedDataID, setSelectedDataID] = useState(0);
   const [selectedDatas, setSelectedDatas] = useState<data | null>(null);
+  useEffect(() => {
+    console.log("selectedDatas", selectedDatas);
+  }, [selectedDatas]);
   const [toggleEdit, setToggleEdit] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -125,6 +138,8 @@ const AdminDashboard: React.FC = () => {
       barangay: selectedData ? selectedData.barangay : "",
       province: selectedData ? selectedData.province : "",
       city: selectedData ? selectedData.city : "",
+      frontID: selectedData ? selectedData.front_id : "",
+      backID: selectedData ? selectedData.front_id : "",
     };
   });
 
@@ -194,6 +209,8 @@ const AdminDashboard: React.FC = () => {
         barangay: selectedData.barangay || "",
         province: selectedData.province || "",
         city: selectedData.city || "",
+        frontID: selectedData.front_id || "",
+        backID: selectedData.back_id || "",
       });
     }
   }, [selectedDataID, dataIncoming]);
@@ -213,6 +230,8 @@ const AdminDashboard: React.FC = () => {
     barangay: "",
     province: "",
     city: "",
+    frontID: "",
+    backID: "",
   });
 
   const handleChange = (
@@ -370,6 +389,8 @@ const AdminDashboard: React.FC = () => {
         province: provinceError || "",
         barangay: barangayError || "",
         city: cityError || "",
+        frontID: "",
+        backID: "",
       });
       setToggleEdit(true);
       return false;
@@ -389,6 +410,8 @@ const AdminDashboard: React.FC = () => {
         province: "",
         barangay: "",
         city: "",
+        frontID: "",
+        backID: "",
       });
 
       return true;
@@ -758,6 +781,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const generateWordDocument = async (data: any) => {
+    //indigency
     console.log("generateWordDocumentgenerateWordDocument", data);
     const {
       age,
@@ -1097,429 +1121,447 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
+  const getPublicUrl = async (datas: any) => {
+    setLoadingImageUrl(true);
+    console.log("datas", datas);
+    const response = await axios.get(`${urlEnv}get-images`, {
+      params: { selectedDatas: datas },
+      withCredentials: true,
+    });
+    if (response.data) {
+      console.log("response", response.data.frontId);
+      setFrontIDUrl(response.data.frontId);
+      setBackIDUrl(response.data.backId);
+    }
+    setLoadingImageUrl(false);
+  };
+
   return (
     <>
       <NavigationBar />
 
-      <div className="m-5 flex flex-row gap-3 justify-between items-center">
-        <h1 className="text-[26px] font-semibold">Admin Dashboard</h1>
-        <div className="flex flex-row items-center gap-3">
-          {activeTab === 2 ? (
-            <button className="rounded-xl py-4 px-6  text-slate-50 bg-blue-500 hover:bg-blue-600">
-              Export
-            </button>
-          ) : (
-            ""
-          )}
-          <button
-            onClick={refresh}
-            className="rounded-xl py-4 px-6  text-slate-50 bg-blue-500 hover:bg-blue-600"
-          >
-            Refresh
-          </button>
-          <div className="flex flex-col">
-            <label htmlFor="type" className="text-[12px] text-gray-400">
-              Document Type:
-            </label>
-            <Select
-              id="type"
-              width="auto"
-              onChange={(e) => setSelectedFilter(e.target.value)}
-              value={selectedFilter}
+      <div className="custom-width">
+        <div className="m-5 flex flex-row gap-3 justify-between items-center">
+          <h1 className="text-[26px] font-semibold">Admin Dashboard</h1>
+          <div className="flex flex-row items-center gap-3">
+            {activeTab === 2 ? (
+              <button className="rounded-xl py-4 px-6  text-slate-50 bg-blue-500 hover:bg-blue-600">
+                Export
+              </button>
+            ) : (
+              ""
+            )}
+            <button
+              onClick={refresh}
+              className="rounded-xl py-4 px-6  text-slate-50 bg-blue-500 hover:bg-blue-600"
             >
-              <option value="All">All</option>
-              <option value="Indigency">Barangay Indigency</option>
-              <option value="Sedula">Sedula</option>
-              <option value="Barangay Clearance">Barangay Clearance</option>
-              <option value="test">test loader</option>
-            </Select>
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="search" className="text-[12px] text-gray-400">
-              Search:
-            </label>
-            <Input
-              id="search"
-              placeholder="Search by Name"
-              width="auto"
-              value={nameSearch}
-              onChange={(e) => {
-                setNameSearch(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
+              Refresh
+            </button>
+            <div className="flex flex-col">
+              <label htmlFor="type" className="text-[12px] text-gray-400">
+                Document Type:
+              </label>
+              <Select
+                id="type"
+                width="auto"
+                onChange={(e) => setSelectedFilter(e.target.value)}
+                value={selectedFilter}
+              >
+                <option value="All">All</option>
+                <option value="Indigency">Barangay Indigency</option>
+                <option value="Sedula">Sedula</option>
+                <option value="Barangay Clearance">Barangay Clearance</option>
+                <option value="test">test loader</option>
+              </Select>
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="search" className="text-[12px] text-gray-400">
+                Search:
+              </label>
+              <Input
+                id="search"
+                placeholder="Search by Name"
+                width="auto"
+                value={nameSearch}
+                onChange={(e) => {
+                  setNameSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex flex-col">
-        <Tabs
-          size="lg"
-          variant="enclosed"
-          index={activeTab}
-          onChange={setActiveTab}
-        >
-          <TabList className="justify-evenly">
-            <Tab className="w-[374.53px]" onClick={handleIncomingClick}>
-              Incoming
-            </Tab>
-            <Tab className="w-[374.53px]" onClick={handleOutgoingClick}>
-              Outgoing
-            </Tab>
-            <Tab className="w-[374.53px]" onClick={handleReleasedClick}>
-              Released
-            </Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel className="!px-0 !pt-0">
-              <div className="flex flex-row justify-between m-4">
-                <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
-                  Names
-                </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
-                  Documents
-                </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[34vh] text-slate-600">
-                  Actions
-                </div>
-              </div>
-
-              <div className="h-[366px] max-h-[366px]">
-                {loadingIncoming ? (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    <LoaderRing />
+        <div className="flex flex-col">
+          <Tabs
+            size="lg"
+            variant="enclosed"
+            index={activeTab}
+            onChange={setActiveTab}
+          >
+            <TabList className="justify-evenly">
+              <Tab className="w-[374.53px]" onClick={handleIncomingClick}>
+                Incoming
+              </Tab>
+              <Tab className="w-[374.53px]" onClick={handleOutgoingClick}>
+                Outgoing
+              </Tab>
+              <Tab className="w-[374.53px]" onClick={handleReleasedClick}>
+                Released
+              </Tab>
+            </TabList>
+            <TabPanels>
+              <TabPanel className="!px-0 !pt-0">
+                <div className="flex flex-row justify-between m-4">
+                  <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
+                    Names
                   </div>
-                ) : Array.isArray(dataIncoming) && dataIncoming.length > 0 ? (
-                  currentPageIncomingData?.map((dataItem, index) => (
-                    <div
-                      key={dataItem.id}
-                      className={`py-4 px-3 flex flex-row justify-between items-center ${
-                        index % 2 === 0 ? "bg-slate-50" : ""
-                      }`}
-                    >
-                      <div className="w-[60vh] justify-center">
-                        <div className="flex flex-row gap-5">
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Last name
-                            </span>
-                            <span>{dataItem.last_name}</span>
-                          </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              First name
-                            </span>
-                            <span>{dataItem.first_name}</span>
-                          </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Middle name
-                            </span>
-                            <span>{dataItem.middle_name}</span>
+                  <span className="text-gray-400">|</span>
+                  <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
+                    Documents
+                  </div>
+                  <span className="text-gray-400">|</span>
+                  <div className="flex justify-center text-[18px] w-[34vh] text-slate-600">
+                    Actions
+                  </div>
+                </div>
+
+                <div className="h-[366px] max-h-[366px]">
+                  {loadingIncoming ? (
+                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
+                      <LoaderRing />
+                    </div>
+                  ) : Array.isArray(dataIncoming) && dataIncoming.length > 0 ? (
+                    currentPageIncomingData?.map((dataItem, index) => (
+                      <div
+                        key={dataItem.id}
+                        className={`py-4 px-3 flex flex-row justify-between items-center ${
+                          index % 2 === 0 ? "bg-slate-50" : ""
+                        }`}
+                      >
+                        <div className="w-[60vh] justify-center">
+                          <div className="flex flex-row gap-5">
+                            <div className="flex flex-col w-fit">
+                              <span className="text-[12px] text-gray-400">
+                                Last name
+                              </span>
+                              <span>{dataItem.last_name}</span>
+                            </div>
+                            <div className="flex flex-col w-fit">
+                              <span className="text-[12px] text-gray-400">
+                                First name
+                              </span>
+                              <span>{dataItem.first_name}</span>
+                            </div>
+                            <div className="flex flex-col w-fit">
+                              <span className="text-[12px] text-gray-400">
+                                Middle name
+                              </span>
+                              <span>{dataItem.middle_name}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="w-[30vh] flex justify-center">
-                        <span>{dataItem.document}</span>
-                      </div>
-                      <div className="flex flex-row gap-5 w-[34vh] justify-center">
-                        <button
-                          onClick={() => {
-                            setSelectedDataID(dataItem.id);
-                            setSelectedDatas(dataItem);
-                            onOpen();
-                          }}
-                          className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
-                        >
-                          VIEW
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setSelectedDatas(dataItem);
-                            openModalAlert3();
-                          }}
-                          className="rounded-xl py-1 px-3 text-slate-50 bg-blue-500 hover:bg-blue-600"
-                        >
-                          ACCEPT
-                        </button>
-
-                        <Tooltip label="Delete" aria-label="A tooltip">
+                        <div className="w-[30vh] flex justify-center">
+                          <span>{dataItem.document}</span>
+                        </div>
+                        <div className="flex flex-row gap-5 w-[34vh] justify-center">
                           <button
-                            className="w-[17px]"
                             onClick={() => {
                               setSelectedDataID(dataItem.id);
-                              setDeleting("incoming");
-                              openModalAlert2();
+                              setSelectedDatas(dataItem);
+                              getPublicUrl(dataItem);
+                              onOpen();
                             }}
+                            className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
                           >
-                            <img
-                              //image-button-size
-                              className="w-[17px]"
-                              src={trashcan}
-                              alt={"trashcan"}
-                            />
+                            VIEW
                           </button>
-                        </Tooltip>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    No Result
-                  </div>
-                )}
-              </div>
 
-              {/* Pagination Controls */}
-              <div className="flex justify-center mt-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="px-3 py-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            </TabPanel>
-            <TabPanel className="!px-0 !pt-0">
-              <div className="flex flex-row justify-between m-4">
-                <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
-                  Names
-                </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
-                  Documents
-                </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[38vh] text-slate-600">
-                  Actions
-                </div>
-              </div>
+                          <button
+                            onClick={() => {
+                              setSelectedDatas(dataItem);
+                              openModalAlert3();
+                            }}
+                            className="rounded-xl py-1 px-3 text-slate-50 bg-blue-500 hover:bg-blue-600"
+                          >
+                            ACCEPT
+                          </button>
 
-              <div className="h-[366px] max-h-[366px]">
-                {loadingOutgoing ? (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    <LoaderRing />
-                  </div>
-                ) : Array.isArray(dataOutgoing) && dataOutgoing.length > 0 ? (
-                  currentPageOutgoingData?.map((dataItem, index) => (
-                    <div
-                      key={dataItem.id}
-                      className={`py-4 px-3 flex flex-row justify-between items-center ${
-                        index % 2 === 0 ? "bg-slate-50" : ""
-                      }`}
-                    >
-                      <div className="w-[60vh] justify-center">
-                        <div className="flex flex-row gap-5">
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Last name
-                            </span>
-                            <span>{dataItem.last_name}</span>
-                          </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              First name
-                            </span>
-                            <span>{dataItem.first_name}</span>
-                          </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Middle name
-                            </span>
-                            <span>{dataItem.middle_name}</span>
-                          </div>
+                          <Tooltip label="Delete" aria-label="A tooltip">
+                            <button
+                              className="w-[17px]"
+                              onClick={() => {
+                                setSelectedDataID(dataItem.id);
+                                setDeleting("incoming");
+                                openModalAlert2();
+                              }}
+                            >
+                              <img
+                                //image-button-size
+                                className="w-[17px]"
+                                src={trashcan}
+                                alt={"trashcan"}
+                              />
+                            </button>
+                          </Tooltip>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
+                      No Result
+                    </div>
+                  )}
+                </div>
 
-                      <div className="w-[30vh] flex justify-center">
-                        <span>{dataItem.document}</span>
-                      </div>
-                      <div className="flex flex-row gap-5 w-[38vh] justify-center">
-                        <button
-                          onClick={() => {
-                            setSelectedDataID(dataItem.id);
-                            setSelectedDatas(dataItem);
-                            openModalAlert4();
-                          }}
-                          className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
-                        >
-                          RELEASE
-                        </button>
-                        <button
-                          onClick={() => generateWordDocument(dataItem)}
-                          className="rounded-xl py-1 px-3 text-slate-50 bg-blue-500 hover:bg-blue-600"
-                        >
-                          GENERATE
-                        </button>
+                {/* Pagination Controls */}
+                <div className="flex justify-center mt-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-3 py-2">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </TabPanel>
+              <TabPanel className="!px-0 !pt-0">
+                <div className="flex flex-row justify-between m-4">
+                  <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
+                    Names
+                  </div>
+                  <span className="text-gray-400">|</span>
+                  <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
+                    Documents
+                  </div>
+                  <span className="text-gray-400">|</span>
+                  <div className="flex justify-center text-[18px] w-[38vh] text-slate-600">
+                    Actions
+                  </div>
+                </div>
 
-                        <Tooltip label="Delete" aria-label="A tooltip">
+                <div className="h-[366px] max-h-[366px]">
+                  {loadingOutgoing ? (
+                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
+                      <LoaderRing />
+                    </div>
+                  ) : Array.isArray(dataOutgoing) && dataOutgoing.length > 0 ? (
+                    currentPageOutgoingData?.map((dataItem, index) => (
+                      <div
+                        key={dataItem.id}
+                        className={`py-4 px-3 flex flex-row justify-between items-center ${
+                          index % 2 === 0 ? "bg-slate-50" : ""
+                        }`}
+                      >
+                        <div className="w-[60vh] justify-center">
+                          <div className="flex flex-row gap-5">
+                            <div className="flex flex-col w-fit">
+                              <span className="text-[12px] text-gray-400">
+                                Last name
+                              </span>
+                              <span>{dataItem.last_name}</span>
+                            </div>
+                            <div className="flex flex-col w-fit">
+                              <span className="text-[12px] text-gray-400">
+                                First name
+                              </span>
+                              <span>{dataItem.first_name}</span>
+                            </div>
+                            <div className="flex flex-col w-fit">
+                              <span className="text-[12px] text-gray-400">
+                                Middle name
+                              </span>
+                              <span>{dataItem.middle_name}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="w-[30vh] flex justify-center">
+                          <span>{dataItem.document}</span>
+                        </div>
+                        <div className="flex flex-row gap-5 w-[38vh] justify-center">
                           <button
-                            className="w-[17px]"
                             onClick={() => {
                               setSelectedDataID(dataItem.id);
-                              setDeleting("outgoing");
-                              openModalAlert2();
+                              setSelectedDatas(dataItem);
+                              openModalAlert4();
                             }}
+                            className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
                           >
-                            <img
-                              //image-button-size
-                              className="w-[17px]"
-                              src={trashcan}
-                              alt={"trashcan"}
-                            />
+                            RELEASE
                           </button>
-                        </Tooltip>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    No Result
-                  </div>
-                )}
-              </div>
+                          <button
+                            onClick={() => generateWordDocument(dataItem)}
+                            className="rounded-xl py-1 px-3 text-slate-50 bg-blue-500 hover:bg-blue-600"
+                          >
+                            GENERATE
+                          </button>
 
-              {/* Pagination Controls */}
-              <div className="flex justify-center mt-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="px-3 py-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            </TabPanel>
-            <TabPanel className="!px-0 !pt-0">
-              <div className="flex flex-row justify-between m-4">
-                <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
-                  Names
-                </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
-                  Documents
-                </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[38vh] text-slate-600">
-                  Released Date
-                </div>
-              </div>
-
-              <div className="h-[366px] max-h-[366px]">
-                {loadingReleased ? (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    <LoaderRing />
-                  </div>
-                ) : Array.isArray(dataReleased) && dataReleased.length > 0 ? (
-                  currentPageReleasedData?.map((dataItem, index) => (
-                    <div
-                      key={dataItem.id}
-                      className={`py-4 px-3 flex flex-row justify-between items-center ${
-                        index % 2 === 0 ? "bg-slate-50" : ""
-                      }`}
-                    >
-                      <div className="w-[60vh] justify-center">
-                        <div className="flex flex-row gap-5">
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Last name
-                            </span>
-                            <span>{dataItem.last_name}</span>
-                          </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              First name
-                            </span>
-                            <span>{dataItem.first_name}</span>
-                          </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Middle name
-                            </span>
-                            <span>{dataItem.middle_name}</span>
-                          </div>
+                          <Tooltip label="Delete" aria-label="A tooltip">
+                            <button
+                              className="w-[17px]"
+                              onClick={() => {
+                                setSelectedDataID(dataItem.id);
+                                setDeleting("outgoing");
+                                openModalAlert2();
+                              }}
+                            >
+                              <img
+                                //image-button-size
+                                className="w-[17px]"
+                                src={trashcan}
+                                alt={"trashcan"}
+                              />
+                            </button>
+                          </Tooltip>
                         </div>
                       </div>
-
-                      <div className="w-[30vh] flex justify-center">
-                        <span>{dataItem.document}</span>
-                      </div>
-                      <div className="flex flex-row gap-5 w-[38vh] justify-center">
-                        <span>
-                          {new Date(
-                            dataItem.released_date
-                          ).toLocaleDateString()}
-                        </span>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
+                      No Result
                     </div>
-                  ))
-                ) : (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    No Result
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              {/* Pagination Controls */}
-              <div className="flex justify-center mt-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="px-3 py-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
+                {/* Pagination Controls */}
+                <div className="flex justify-center mt-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-3 py-2">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </TabPanel>
+              <TabPanel className="!px-0 !pt-0">
+                <div className="flex flex-row justify-between m-4">
+                  <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
+                    Names
+                  </div>
+                  <span className="text-gray-400">|</span>
+                  <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
+                    Documents
+                  </div>
+                  <span className="text-gray-400">|</span>
+                  <div className="flex justify-center text-[18px] w-[38vh] text-slate-600">
+                    Released Date
+                  </div>
+                </div>
+
+                <div className="h-[366px] max-h-[366px]">
+                  {loadingReleased ? (
+                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
+                      <LoaderRing />
+                    </div>
+                  ) : Array.isArray(dataReleased) && dataReleased.length > 0 ? (
+                    currentPageReleasedData?.map((dataItem, index) => (
+                      <div
+                        key={dataItem.id}
+                        className={`py-4 px-3 flex flex-row justify-between items-center ${
+                          index % 2 === 0 ? "bg-slate-50" : ""
+                        }`}
+                      >
+                        <div className="w-[60vh] justify-center">
+                          <div className="flex flex-row gap-5">
+                            <div className="flex flex-col w-fit">
+                              <span className="text-[12px] text-gray-400">
+                                Last name
+                              </span>
+                              <span>{dataItem.last_name}</span>
+                            </div>
+                            <div className="flex flex-col w-fit">
+                              <span className="text-[12px] text-gray-400">
+                                First name
+                              </span>
+                              <span>{dataItem.first_name}</span>
+                            </div>
+                            <div className="flex flex-col w-fit">
+                              <span className="text-[12px] text-gray-400">
+                                Middle name
+                              </span>
+                              <span>{dataItem.middle_name}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="w-[30vh] flex justify-center">
+                          <span>{dataItem.document}</span>
+                        </div>
+                        <div className="flex flex-row gap-5 w-[38vh] justify-center">
+                          <span>
+                            {new Date(
+                              dataItem.released_date
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
+                      No Result
+                    </div>
+                  )}
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="flex justify-center mt-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-3 py-2">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </div>
       </div>
 
       {/* INCOMING MODALS */}
@@ -1843,6 +1885,32 @@ const AdminDashboard: React.FC = () => {
                                 value="Sedula"
                                 readOnly
                                 className={`hidden p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 `}
+                              />
+                            </div>
+                            <div className="sm:col-span-6">
+                              <label
+                                htmlFor="city"
+                                className="block text-sm font-medium leading-6 text-gray-900"
+                              >
+                                Front ID
+                              </label>
+                              <Image
+                                src={frontIDUrl ? frontIDUrl : "loading"}
+                                alt="First Image Preview"
+                                className="rounded-lg shadow-md my-1"
+                              />
+                            </div>
+                            <div className="sm:col-span-6">
+                              <label
+                                htmlFor="city"
+                                className="block text-sm font-medium leading-6 text-gray-900"
+                              >
+                                Front ID
+                              </label>
+                              <Image
+                                src={backIDUrl ? backIDUrl : "Loading"}
+                                alt="second Image Preview"
+                                className="rounded-lg shadow-md my-1"
                               />
                             </div>
                           </div>
