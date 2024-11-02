@@ -1,5 +1,8 @@
 import {
   Button,
+  Input,
+  InputGroup,
+  InputLeftAddon,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -7,14 +10,17 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Stack,
   useDisclosure,
   useToast,
+  Image,
 } from "@chakra-ui/react";
 import errorimage from "src/assets/circle-exclamation-solid.svg";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import NavigationBar from "./NavigationBar";
+import { supabase } from "../config";
 
 interface IndigencyForm {
   document: string;
@@ -31,6 +37,8 @@ interface IndigencyForm {
   province: string;
   barangay: string;
   city: string;
+  frontID: string;
+  backID: string;
 }
 
 export const ErrorImage = () => {
@@ -42,6 +50,8 @@ const FillUpIndigency: React.FC = () => {
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
+  const [frontIdObject, setFrontIdObject] = useState<File | null>(null);
+  const [backIdObject, setBackIdObject] = useState<File | null>(null);
   const [form, setForm] = useState<IndigencyForm>(() => {
     const savedForm = localStorage.getItem("indigencyForm");
     return savedForm
@@ -61,6 +71,8 @@ const FillUpIndigency: React.FC = () => {
           barangay: "",
           province: "",
           city: "",
+          frontID: "",
+          backID: "",
         };
   });
 
@@ -83,6 +95,8 @@ const FillUpIndigency: React.FC = () => {
     barangay: "",
     province: "",
     city: "",
+    frontID: "",
+    backID: "",
   });
 
   const clearFormData = () => {
@@ -102,6 +116,8 @@ const FillUpIndigency: React.FC = () => {
       barangay: "",
       province: "",
       city: "",
+      frontID: "",
+      backID: "",
     });
   };
 
@@ -225,6 +241,18 @@ const FillUpIndigency: React.FC = () => {
     }
   };
 
+  const validateFrontID = (name: string) => {
+    if (!name || !frontIdObject) {
+      return "Must fill this field";
+    }
+  };
+
+  const validateBackID = (name: string) => {
+    if (!name || !frontIdObject) {
+      return "Must fill this field";
+    }
+  };
+
   const handleConfirm = () => {
     const first_nameError = validatefirst_name(form.first_name);
     const middle_nameError = validatemiddle_name(form.middle_name);
@@ -237,6 +265,8 @@ const FillUpIndigency: React.FC = () => {
     const provinceError = validateprovince(form.province);
     const barangayError = validatebarangay(form.barangay);
     const cityError = validatecity(form.barangay);
+    const frontIDError = validateFrontID(form.frontID);
+    const backIDError = validateBackID(form.backID);
 
     if (
       first_nameError ||
@@ -247,7 +277,9 @@ const FillUpIndigency: React.FC = () => {
       // schoolError ||
       streetError ||
       provinceError ||
-      barangayError
+      barangayError ||
+      frontIDError ||
+      backIDError
     ) {
       setError({
         document: "",
@@ -264,6 +296,8 @@ const FillUpIndigency: React.FC = () => {
         province: provinceError || "",
         barangay: barangayError || "",
         city: cityError || "",
+        frontID: frontIDError || "",
+        backID: backIDError || "",
       });
       return false;
     } else {
@@ -282,20 +316,61 @@ const FillUpIndigency: React.FC = () => {
         province: "",
         barangay: "",
         city: "",
+        frontID: "",
+        backID: "",
       });
 
       return true;
     }
   };
 
+  const uploadFile = async (file: File, path: string) => {
+    const { data, error } = await supabase.storage
+      .from("uploads")
+      .upload(path, file);
+
+    if (error) {
+      console.error("Error uploading file:", error);
+      throw error;
+    }
+
+    return data;
+  };
+
   const handleSubmit = async () => {
     // console.log("clicke!");
     // e.preventDefault();
 
-    const urlEnv = process.env.REACT_APP_SERVER_ACCESS + "incoming_request";
+    const urlEnv = process.env.REACT_APP_SERVER_ACCESS;
     console.log("urlEnv", urlEnv);
+
     try {
-      const response = await axios.post(urlEnv, form);
+      let frontIDPath = null;
+      let backIDPath = null;
+
+      // Upload files to Supabase Storage
+      if (frontIdObject) {
+        console.log("frontIdObject", frontIdObject);
+        const frontIDResponse = await uploadFile(
+          frontIdObject,
+          `uploads/frontID-${Date.now()}.png`
+        );
+        frontIDPath = frontIDResponse.path; // Use the path for further processing
+      }
+
+      if (backIdObject) {
+        const backIDResponse = await uploadFile(
+          backIdObject,
+          `uploads/backID-${Date.now()}.png`
+        );
+        backIDPath = backIDResponse.path; // Use the path for further processing
+      }
+
+      const response = await axios.post(`${urlEnv}incoming_request`, {
+        ...form,
+        frontID: frontIDPath,
+        backID: backIDPath,
+      });
       console.log("response", response);
       if (response.data) {
         onClose();
@@ -305,6 +380,38 @@ const FillUpIndigency: React.FC = () => {
     } catch (error) {
       console.error("Error submitting form", error);
       // Optionally handle the error, show a message, etc.
+    }
+  };
+
+  // Handle image selection for the first input
+  const handleFrontIDChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFrontIdObject(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm((prevForm) => ({
+          ...prevForm,
+          frontID: reader.result as string,
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle back image selection
+  const handleBackIDChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setBackIdObject(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm((prevForm) => ({
+          ...prevForm,
+          backID: reader.result as string, // Save base64 or URL string
+        }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -323,7 +430,7 @@ const FillUpIndigency: React.FC = () => {
               </h2>
               {/* <p className="mt-1 text-sm leading-6 text-gray-600">
               Use a permanent address where you can receive mail.
-            </p> */}
+             </p> */}
 
               <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                 <div className="sm:col-span-3">
@@ -334,14 +441,14 @@ const FillUpIndigency: React.FC = () => {
                     First name
                   </label>
                   <div className="mt-2">
-                    <input
+                    <Input
                       id="first_name"
                       name="first_name"
                       value={form.first_name}
                       onChange={handleChange}
                       type="text"
-                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                        error.first_name ? "border-2 border-rose-600" : ""
+                      className={`${
+                        error.first_name ? "!border-2 !border-rose-600" : ""
                       }`}
                     />
                     {error.first_name && (
@@ -360,14 +467,14 @@ const FillUpIndigency: React.FC = () => {
                     Middle name
                   </label>
                   <div className="mt-2">
-                    <input
+                    <Input
                       id="middle_name"
                       name="middle_name"
                       value={form.middle_name}
                       onChange={handleChange}
                       type="text"
-                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                        error.middle_name ? "border-2 border-rose-600" : ""
+                      className={` ${
+                        error.middle_name ? "!border-2 !border-rose-600" : ""
                       }`}
                     />
                     {error.middle_name && (
@@ -386,16 +493,17 @@ const FillUpIndigency: React.FC = () => {
                     Last name
                   </label>
                   <div className="mt-2">
-                    <input
+                    <Input
                       id="last_name"
                       name="last_name"
                       value={form.last_name}
                       onChange={handleChange}
                       type="text"
-                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                        error.last_name ? "border-2 border-rose-600" : ""
+                      className={` ${
+                        error.last_name ? "!border-2 !border-rose-600" : ""
                       }`}
                     />
+
                     {error.last_name && (
                       <label className="flex items-center mt-1 text-rose-600">
                         <ErrorImage />
@@ -412,14 +520,14 @@ const FillUpIndigency: React.FC = () => {
                     Ext. name
                   </label>
                   <div className="mt-2">
-                    <input
+                    <Input
                       id="ext_name"
                       name="ext_name"
                       value={form.ext_name}
                       onChange={handleChange}
                       type="text"
-                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                        error.ext_name ? "border-2 border-rose-600" : ""
+                      className={` ${
+                        error.ext_name ? "!border-2 !border-rose-600" : ""
                       }`}
                     />
                     {error.ext_name && (
@@ -438,14 +546,14 @@ const FillUpIndigency: React.FC = () => {
                     Age
                   </label>
                   <div className="mt-2">
-                    <input
+                    <Input
                       id="age"
                       name="age"
                       value={form.age}
                       onChange={handleChange}
                       type="number"
-                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                        error.age ? "border-2 border-rose-600" : ""
+                      className={` ${
+                        error.age ? "!border-2 !border-rose-600" : ""
                       }`}
                     />
                     {error.age && (
@@ -461,19 +569,25 @@ const FillUpIndigency: React.FC = () => {
                     htmlFor="mobile_num"
                     className="block text-sm font-medium leading-6 text-gray-900"
                   >
-                    mobile_num #
+                    Mobile Number
                   </label>
                   <div className="mt-2">
-                    <input
-                      id="mobile_num"
-                      name="mobile_num"
-                      value={form.mobile_num}
-                      onChange={handleChange}
-                      type="text"
-                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                        error.mobile_num ? "border-2 border-rose-600" : ""
-                      }`}
-                    />
+                    <Stack spacing={4}>
+                      <InputGroup>
+                        <InputLeftAddon>+63</InputLeftAddon>
+                        <Input
+                          type="tel"
+                          placeholder="9123456789"
+                          id="mobile_num"
+                          name="mobile_num"
+                          value={form.mobile_num}
+                          onChange={handleChange}
+                          className={` ${
+                            error.mobile_num ? "!border-2 !border-rose-600" : ""
+                          }`}
+                        />
+                      </InputGroup>
+                    </Stack>
                     {error.mobile_num && (
                       <label className="flex items-center mt-1 text-rose-600">
                         <ErrorImage />
@@ -491,16 +605,17 @@ const FillUpIndigency: React.FC = () => {
                     Purok / Street
                   </label>
                   <div className="mt-2">
-                    <input
+                    <Input
                       id="street"
                       name="street"
                       type="text"
                       value={form.street}
                       onChange={handleChange}
-                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                        error.street ? "border-2 border-rose-600" : ""
+                      className={` ${
+                        error.street ? "!border-2 !border-rose-600" : ""
                       }`}
                     />
+
                     {error.street && (
                       <label className="flex items-center mt-1 text-rose-600">
                         <ErrorImage />
@@ -517,16 +632,17 @@ const FillUpIndigency: React.FC = () => {
                     Barangay
                   </label>
                   <div className="mt-2">
-                    <input
+                    <Input
                       id="barangay"
                       name="barangay"
                       type="text"
                       value={form.barangay}
                       onChange={handleChange}
-                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                        error.barangay ? "border-2 border-rose-600" : ""
+                      className={` ${
+                        error.barangay ? "!border-2 !border-rose-600" : ""
                       }`}
                     />
+
                     {error.barangay && (
                       <label className="flex items-center mt-1 text-rose-600">
                         <ErrorImage />
@@ -543,16 +659,17 @@ const FillUpIndigency: React.FC = () => {
                     State / Province
                   </label>
                   <div className="mt-2">
-                    <input
+                    <Input
                       id="province"
                       name="province"
                       type="text"
                       value={form.province}
                       onChange={handleChange}
-                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                        error.province ? "border-2 border-rose-600" : ""
+                      className={` ${
+                        error.province ? "!border-2 !border-rose-600" : ""
                       }`}
                     />
+
                     {error.province && (
                       <label className="flex items-center mt-1 text-rose-600">
                         <ErrorImage />
@@ -569,16 +686,17 @@ const FillUpIndigency: React.FC = () => {
                     City
                   </label>
                   <div className="mt-2">
-                    <input
+                    <Input
                       id="city"
                       name="city"
                       type="text"
                       value={form.city}
                       onChange={handleChange}
-                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                        error.city ? "border-2 border-rose-600" : ""
+                      className={` ${
+                        error.city ? "!border-2 !border-rose-600" : ""
                       }`}
                     />
+
                     {error.city && (
                       <label className="flex items-center mt-1 text-rose-600">
                         <ErrorImage />
@@ -594,6 +712,78 @@ const FillUpIndigency: React.FC = () => {
                     readOnly
                     className={`hidden p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 `}
                   />
+                </div>
+                <div className="sm:col-span-2">
+                  <label
+                    htmlFor="first_name"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Front image of valid ID
+                  </label>
+                  <span className="text-sm">
+                    Make sure the image is clear and can be read
+                  </span>
+                  <div className="mt-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      //value={form.frontID}
+                      onChange={handleFrontIDChange}
+                      className={`file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 ${
+                        error.frontID ? "!border-2 !border-rose-600" : ""
+                      }`}
+                      style={{ padding: "1px 0" }}
+                    />
+                    {error.frontID && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.frontID}
+                      </label>
+                    )}
+                    {form.frontID && frontIdObject && (
+                      <Image
+                        src={form.frontID}
+                        alt="First Image Preview"
+                        className="rounded-lg shadow-md my-1"
+                      />
+                    )}
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label
+                    htmlFor="middle_name"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Back image of valid ID
+                  </label>
+                  <span className="text-sm">
+                    Make sure the image is clear and can be read
+                  </span>
+                  <div className="mt-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      //value={form.backID}
+                      onChange={handleBackIDChange}
+                      className={`file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 ${
+                        error.backID ? "!border-2 !border-rose-600" : ""
+                      }`}
+                      style={{ padding: "1px 0" }}
+                    />
+                    {error.backID && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.backID}
+                      </label>
+                    )}
+                    {form.backID && backIdObject && (
+                      <Image
+                        src={form.backID}
+                        alt="Second Image Preview"
+                        className="rounded-lg shadow-md my-1"
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

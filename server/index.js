@@ -4,6 +4,8 @@ import cors from "cors";
 import { config } from "dotenv";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
+import multer from "multer";
+import path from "path";
 
 config();
 
@@ -34,6 +36,52 @@ app.get("/test", (req, res) => {
   });
 });
 
+app.get("/get-images", async (req, res) => {
+  const { front_id, back_id } = req.query.selectedDatas;
+  const accessToken = req.cookies.accessToken;
+
+  console.log("req.query", req.query.selectedDatas);
+  console.log("accessToken", accessToken);
+
+  const supabaseForAuthenticated = createClient(supabaseUrl, supabaseKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+
+  let frontId, backId;
+
+  const { data: front, error: errorfront } = supabaseForAuthenticated.storage
+    .from("uploads")
+    .getPublicUrl(front_id);
+
+  if (errorfront) {
+    console.error("error fetching images:", errorfront);
+  }
+
+  if (front) {
+    console.log("data_get_images:", front.publicUrl);
+    frontId = front.publicUrl;
+  }
+
+  const { data: back, error: errorback } = supabaseForAuthenticated.storage
+    .from("uploads")
+    .getPublicUrl(back_id);
+
+  if (errorback) {
+    console.error("error fetching images1:", errorback);
+  }
+
+  if (back) {
+    console.log("data_get_images1:", back.publicUrl);
+    backId = back.publicUrl;
+  }
+
+  return res.send({ frontId, backId });
+});
+
 app.post("/incoming_request", async (req, res) => {
   console.log("incoming request", req.body);
 
@@ -49,7 +97,12 @@ app.post("/incoming_request", async (req, res) => {
     barangay,
     province,
     city,
+    frontID,
+    backID,
   } = req.body;
+
+  console.log("frontID", frontID);
+  console.log("backID", backID);
 
   const { data, error } = await supabase.from(`incoming`).insert({
     first_name,
@@ -63,6 +116,8 @@ app.post("/incoming_request", async (req, res) => {
     province,
     city,
     document,
+    front_id: frontID,
+    back_id: backID,
   });
 
   if (error) {
