@@ -14,9 +14,10 @@ import errorimage from "src/assets/circle-exclamation-solid.svg";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
+import NavigationBar from "./NavigationBar";
 
-interface IndigencyForm {
-  form: string;
+export interface IndigencyForm {
+  document: string;
   first_name: string;
   middle_name: string;
   last_name: string;
@@ -37,6 +38,7 @@ export const ErrorImage = () => {
 };
 
 const FillUpIndigency: React.FC = () => {
+  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
@@ -45,7 +47,7 @@ const FillUpIndigency: React.FC = () => {
     return savedForm
       ? JSON.parse(savedForm)
       : {
-          form: "sedula",
+          document: "Sedula",
           first_name: "",
           middle_name: "",
           last_name: "",
@@ -67,7 +69,7 @@ const FillUpIndigency: React.FC = () => {
   }, [form]);
 
   const [error, setError] = useState<IndigencyForm>({
-    form: "",
+    document: "",
     first_name: "",
     middle_name: "",
     last_name: "",
@@ -86,7 +88,7 @@ const FillUpIndigency: React.FC = () => {
   const clearFormData = () => {
     localStorage.removeItem("sedulaForm");
     setForm({
-      form: "sedula",
+      document: "Sedula",
       first_name: "",
       middle_name: "",
       last_name: "",
@@ -248,7 +250,7 @@ const FillUpIndigency: React.FC = () => {
       barangayError
     ) {
       setError({
-        form: "",
+        document: "",
         first_name: first_nameError || "",
         middle_name: middle_nameError || "",
         last_name: last_nameError || "",
@@ -266,7 +268,7 @@ const FillUpIndigency: React.FC = () => {
       return false;
     } else {
       setError({
-        form: "",
+        document: "",
         first_name: "",
         middle_name: "",
         last_name: "",
@@ -298,7 +300,7 @@ const FillUpIndigency: React.FC = () => {
       if (response.data) {
         onClose();
         // clearFormData();
-        navigate("/");
+        navigate("/Selection of Documents");
       }
     } catch (error) {
       console.error("Error submitting form", error);
@@ -307,369 +309,372 @@ const FillUpIndigency: React.FC = () => {
   };
 
   return (
-    <div className="flex h-dvh justify-center p-2">
-      <form className="w-5/6" onSubmit={handleSubmit}>
-        <div className="space-y-12">
-          <div className="border-b border-gray-900/10 pb-12">
-            <h2 className="text-base font-semibold leading-10 text-gray-900 mt-4 mb-4">
-              Sedula
-            </h2>
-            <h2 className="text-base font-semibold leading-7 text-gray-900">
-              Personal Information
-            </h2>
-            {/* <p className="mt-1 text-sm leading-6 text-gray-600">
+    <>
+      {isAuthenticated ? <NavigationBar /> : ""}
+      <div className="flex h-dvh justify-center p-2">
+        <form className="w-5/6" onSubmit={handleSubmit}>
+          <div className="space-y-12">
+            <div className="border-b border-gray-900/10 pb-12">
+              <h2 className="text-base font-semibold leading-10 text-gray-900 mt-4 mb-4">
+                Sedula
+              </h2>
+              <h2 className="text-base font-semibold leading-7 text-gray-900">
+                Personal Information
+              </h2>
+              {/* <p className="mt-1 text-sm leading-6 text-gray-600">
               Use a permanent address where you can receive mail.
             </p> */}
 
-            <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-              <div className="sm:col-span-3">
-                <label
-                  htmlFor="first_name"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  First name
-                </label>
-                <div className="mt-2">
+              <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                <div className="sm:col-span-3">
+                  <label
+                    htmlFor="first_name"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    First name
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      id="first_name"
+                      name="first_name"
+                      value={form.first_name}
+                      onChange={handleChange}
+                      type="text"
+                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        error.first_name ? "border-2 border-rose-600" : ""
+                      }`}
+                    />
+                    {error.first_name && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.first_name}
+                      </label>
+                    )}
+                  </div>
+                </div>{" "}
+                <div className="sm:col-span-3">
+                  <label
+                    htmlFor="middle_name"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Middle name
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      id="middle_name"
+                      name="middle_name"
+                      value={form.middle_name}
+                      onChange={handleChange}
+                      type="text"
+                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        error.middle_name ? "border-2 border-rose-600" : ""
+                      }`}
+                    />
+                    {error.middle_name && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.middle_name}
+                      </label>
+                    )}
+                  </div>
+                </div>
+                <div className="sm:col-span-3">
+                  <label
+                    htmlFor="last_name"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Last name
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      id="last_name"
+                      name="last_name"
+                      value={form.last_name}
+                      onChange={handleChange}
+                      type="text"
+                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        error.last_name ? "border-2 border-rose-600" : ""
+                      }`}
+                    />
+                    {error.last_name && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.last_name}
+                      </label>
+                    )}
+                  </div>
+                </div>
+                <div className="sm:col-span-3">
+                  <label
+                    htmlFor="ext_name"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Ext. name
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      id="ext_name"
+                      name="ext_name"
+                      value={form.ext_name}
+                      onChange={handleChange}
+                      type="text"
+                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        error.ext_name ? "border-2 border-rose-600" : ""
+                      }`}
+                    />
+                    {error.ext_name && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.ext_name}
+                      </label>
+                    )}
+                  </div>
+                </div>
+                <div className="sm:col-span-3">
+                  <label
+                    htmlFor="age"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Age
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      id="age"
+                      name="age"
+                      value={form.age}
+                      onChange={handleChange}
+                      type="number"
+                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        error.age ? "border-2 border-rose-600" : ""
+                      }`}
+                    />
+                    {error.age && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.age}
+                      </label>
+                    )}
+                  </div>
+                </div>
+                <div className="sm:col-span-4">
+                  <label
+                    htmlFor="mobile_num"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    mobile_num #
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      id="mobile_num"
+                      name="mobile_num"
+                      value={form.mobile_num}
+                      onChange={handleChange}
+                      type="text"
+                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        error.mobile_num ? "border-2 border-rose-600" : ""
+                      }`}
+                    />
+                    {error.mobile_num && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.mobile_num}
+                      </label>
+                    )}
+                  </div>
+                </div>
+                {/* here paste 1 */}
+                <div className="sm:col-span-2 sm:col-start-1">
+                  <label
+                    htmlFor="street"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Purok / Street
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      id="street"
+                      name="street"
+                      type="text"
+                      value={form.street}
+                      onChange={handleChange}
+                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        error.street ? "border-2 border-rose-600" : ""
+                      }`}
+                    />
+                    {error.street && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.street}
+                      </label>
+                    )}
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label
+                    htmlFor="barangay"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Barangay
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      id="barangay"
+                      name="barangay"
+                      type="text"
+                      value={form.barangay}
+                      onChange={handleChange}
+                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        error.barangay ? "border-2 border-rose-600" : ""
+                      }`}
+                    />
+                    {error.barangay && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.barangay}
+                      </label>
+                    )}
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label
+                    htmlFor="province"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    State / Province
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      id="province"
+                      name="province"
+                      type="text"
+                      value={form.province}
+                      onChange={handleChange}
+                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        error.province ? "border-2 border-rose-600" : ""
+                      }`}
+                    />
+                    {error.province && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.province}
+                      </label>
+                    )}
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label
+                    htmlFor="city"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    City
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      id="city"
+                      name="city"
+                      type="text"
+                      value={form.city}
+                      onChange={handleChange}
+                      className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        error.city ? "border-2 border-rose-600" : ""
+                      }`}
+                    />
+                    {error.city && (
+                      <label className="flex items-center mt-1 text-rose-600">
+                        <ErrorImage />
+                        {error.city}
+                      </label>
+                    )}
+                  </div>
                   <input
-                    id="first_name"
-                    name="first_name"
-                    value={form.first_name}
-                    onChange={handleChange}
+                    id="document"
+                    name="document"
                     type="text"
-                    className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                      error.first_name ? "border-2 border-rose-600" : ""
-                    }`}
+                    value="Sedula"
+                    readOnly
+                    className={`hidden p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 `}
                   />
-                  {error.first_name && (
-                    <label className="flex items-center mt-1 text-rose-600">
-                      <ErrorImage />
-                      {error.first_name}
-                    </label>
-                  )}
                 </div>
-              </div>{" "}
-              <div className="sm:col-span-3">
-                <label
-                  htmlFor="middle_name"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  Middle name
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="middle_name"
-                    name="middle_name"
-                    value={form.middle_name}
-                    onChange={handleChange}
-                    type="text"
-                    className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                      error.middle_name ? "border-2 border-rose-600" : ""
-                    }`}
-                  />
-                  {error.middle_name && (
-                    <label className="flex items-center mt-1 text-rose-600">
-                      <ErrorImage />
-                      {error.middle_name}
-                    </label>
-                  )}
-                </div>
-              </div>
-              <div className="sm:col-span-3">
-                <label
-                  htmlFor="last_name"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  Last name
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="last_name"
-                    name="last_name"
-                    value={form.last_name}
-                    onChange={handleChange}
-                    type="text"
-                    className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                      error.last_name ? "border-2 border-rose-600" : ""
-                    }`}
-                  />
-                  {error.last_name && (
-                    <label className="flex items-center mt-1 text-rose-600">
-                      <ErrorImage />
-                      {error.last_name}
-                    </label>
-                  )}
-                </div>
-              </div>
-              <div className="sm:col-span-3">
-                <label
-                  htmlFor="ext_name"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  Ext. name
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="ext_name"
-                    name="ext_name"
-                    value={form.ext_name}
-                    onChange={handleChange}
-                    type="text"
-                    className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                      error.ext_name ? "border-2 border-rose-600" : ""
-                    }`}
-                  />
-                  {error.ext_name && (
-                    <label className="flex items-center mt-1 text-rose-600">
-                      <ErrorImage />
-                      {error.ext_name}
-                    </label>
-                  )}
-                </div>
-              </div>
-              <div className="sm:col-span-3">
-                <label
-                  htmlFor="age"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  Age
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="age"
-                    name="age"
-                    value={form.age}
-                    onChange={handleChange}
-                    type="number"
-                    className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                      error.age ? "border-2 border-rose-600" : ""
-                    }`}
-                  />
-                  {error.age && (
-                    <label className="flex items-center mt-1 text-rose-600">
-                      <ErrorImage />
-                      {error.age}
-                    </label>
-                  )}
-                </div>
-              </div>
-              <div className="sm:col-span-4">
-                <label
-                  htmlFor="mobile_num"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  mobile_num #
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="mobile_num"
-                    name="mobile_num"
-                    value={form.mobile_num}
-                    onChange={handleChange}
-                    type="text"
-                    className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                      error.mobile_num ? "border-2 border-rose-600" : ""
-                    }`}
-                  />
-                  {error.mobile_num && (
-                    <label className="flex items-center mt-1 text-rose-600">
-                      <ErrorImage />
-                      {error.mobile_num}
-                    </label>
-                  )}
-                </div>
-              </div>
-              {/* here paste 1 */}
-              <div className="sm:col-span-2 sm:col-start-1">
-                <label
-                  htmlFor="street"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  Purok / Street
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="street"
-                    name="street"
-                    type="text"
-                    value={form.street}
-                    onChange={handleChange}
-                    className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                      error.street ? "border-2 border-rose-600" : ""
-                    }`}
-                  />
-                  {error.street && (
-                    <label className="flex items-center mt-1 text-rose-600">
-                      <ErrorImage />
-                      {error.street}
-                    </label>
-                  )}
-                </div>
-              </div>
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="barangay"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  Barangay
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="barangay"
-                    name="barangay"
-                    type="text"
-                    value={form.barangay}
-                    onChange={handleChange}
-                    className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                      error.barangay ? "border-2 border-rose-600" : ""
-                    }`}
-                  />
-                  {error.barangay && (
-                    <label className="flex items-center mt-1 text-rose-600">
-                      <ErrorImage />
-                      {error.barangay}
-                    </label>
-                  )}
-                </div>
-              </div>
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="province"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  State / Province
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="province"
-                    name="province"
-                    type="text"
-                    value={form.province}
-                    onChange={handleChange}
-                    className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                      error.province ? "border-2 border-rose-600" : ""
-                    }`}
-                  />
-                  {error.province && (
-                    <label className="flex items-center mt-1 text-rose-600">
-                      <ErrorImage />
-                      {error.province}
-                    </label>
-                  )}
-                </div>
-              </div>
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="city"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  City
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="city"
-                    name="city"
-                    type="text"
-                    value={form.city}
-                    onChange={handleChange}
-                    className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                      error.city ? "border-2 border-rose-600" : ""
-                    }`}
-                  />
-                  {error.city && (
-                    <label className="flex items-center mt-1 text-rose-600">
-                      <ErrorImage />
-                      {error.city}
-                    </label>
-                  )}
-                </div>
-                <input
-                  id="form"
-                  name="form"
-                  type="text"
-                  value="sedula"
-                  readOnly
-                  className={`hidden p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 `}
-                />
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-6 pb-8 flex items-center justify-end gap-x-6 ">
-          <button
-            type="button"
-            onClick={handleButtonClickedBack}
-            className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
-          >
-            Back
-          </button>
+          <div className="mt-6 pb-8 flex items-center justify-end gap-x-6 ">
+            <button
+              type="button"
+              onClick={handleButtonClickedBack}
+              className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
+            >
+              Back
+            </button>
 
-          <Button
-            onClick={() => {
-              const confirm = handleConfirm();
-              confirm && onOpen();
-            }}
-            className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            Confirm
-          </Button>
-          <Button
-            onClick={clearFormData}
-            className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            clear(debug onle)
-          </Button>
-        </div>
-        <Modal onClose={onClose} isOpen={isOpen} isCentered>
-          <ModalOverlay />
-          <ModalContent
-            style={{
-              marginLeft: "0.75rem",
-              marginRight: "0.75rem",
-            }}
-          >
-            <ModalHeader>Review</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>Please ensure the informations are correct.</ModalBody>
-            <ModalFooter className="gap-x-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
-              >
-                Review
-              </button>
-              <button
-                type="submit"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const examplePromise = handleSubmit();
-                  // onClose();
+            <Button
+              onClick={() => {
+                const confirm = handleConfirm();
+                confirm && onOpen();
+              }}
+              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              Confirm
+            </Button>
+            <Button
+              onClick={clearFormData}
+              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              clear(debug onle)
+            </Button>
+          </div>
+          <Modal onClose={onClose} isOpen={isOpen} isCentered>
+            <ModalOverlay />
+            <ModalContent
+              style={{
+                marginLeft: "0.75rem",
+                marginRight: "0.75rem",
+              }}
+            >
+              <ModalHeader>Review</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody>Please ensure the informations are correct.</ModalBody>
+              <ModalFooter className="gap-x-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
+                >
+                  Review
+                </button>
+                <button
+                  type="submit"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const examplePromise = handleSubmit();
+                    // onClose();
 
-                  toast.promise(examplePromise, {
-                    success: {
-                      title: "Sent",
-                      description: "Document request sent",
-                    },
-                    error: {
-                      title: "rejected",
-                      description: "Something wrong",
-                    },
-                    loading: {
-                      title: "Preparing",
-                      description: "Please wait",
-                    },
-                  });
-                }}
-                className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
-              >
-                Submit
-              </button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-      </form>
-    </div>
+                    toast.promise(examplePromise, {
+                      success: {
+                        title: "Sent",
+                        description: "Document request sent",
+                      },
+                      error: {
+                        title: "rejected",
+                        description: "Something wrong",
+                      },
+                      loading: {
+                        title: "Preparing",
+                        description: "Please wait",
+                      },
+                    });
+                  }}
+                  className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
+                >
+                  Submit
+                </button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
+        </form>
+      </div>
+    </>
   );
 };
 
