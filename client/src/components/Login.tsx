@@ -101,6 +101,8 @@ const Login: React.FC = () => {
             { withCredentials: true }
           );
           if (response) {
+            console.log(response);
+
             localStorage.setItem("isAuthenticated", "true");
           }
         } catch (error: any) {
@@ -108,7 +110,7 @@ const Login: React.FC = () => {
             message: error.response?.data?.error,
           });
           setLoading(false);
-          throw new Error(error.response?.data?.error || "Login failed");
+          // throw new Error(error.response?.data?.error || "Login failed");
         }
 
         if (rememberMe) {
