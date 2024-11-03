@@ -265,8 +265,13 @@ const FillUpIndigency: React.FC = () => {
     const provinceError = validateprovince(form.province);
     const barangayError = validatebarangay(form.barangay);
     const cityError = validatecity(form.barangay);
-    const frontIDError = validateFrontID(form.frontID);
-    const backIDError = validateBackID(form.backID);
+    let frontIDError = validateFrontID(form.frontID);
+    let backIDError = validateBackID(form.backID);
+
+    if (isAuthenticated) {
+      frontIDError = "";
+      backIDError = "";
+    }
 
     if (
       first_nameError ||
@@ -564,7 +569,7 @@ const FillUpIndigency: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="sm:col-span-4">
+                <div className="sm:col-span-3">
                   <label
                     htmlFor="mobile_num"
                     className="block text-sm font-medium leading-6 text-gray-900"
@@ -572,7 +577,7 @@ const FillUpIndigency: React.FC = () => {
                     Mobile Number
                   </label>
                   <div className="mt-2">
-                    <Stack spacing={4}>
+                    <Stack spacing={1}>
                       <InputGroup>
                         <InputLeftAddon>+63</InputLeftAddon>
                         <Input
@@ -587,6 +592,13 @@ const FillUpIndigency: React.FC = () => {
                           }`}
                         />
                       </InputGroup>
+                      <label
+                        htmlFor="type"
+                        className="text-[15px] text-gray-400"
+                      >
+                        Reminder: Confirmation of document request will be send
+                        to this number
+                      </label>
                     </Stack>
                     {error.mobile_num && (
                       <label className="flex items-center mt-1 text-rose-600">
