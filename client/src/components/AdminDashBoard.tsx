@@ -1129,6 +1129,7 @@ const AdminDashboard: React.FC = () => {
       withCredentials: true,
     });
     if (response.data) {
+      console.log("response.data", response);
       console.log("response", response.data.frontId);
       setFrontIDUrl(response.data.frontId);
       setBackIDUrl(response.data.backId);
@@ -1395,6 +1396,17 @@ const AdminDashboard: React.FC = () => {
                           <span>{dataItem.document}</span>
                         </div>
                         <div className="flex flex-row gap-5 w-[38vh] justify-center">
+                          <button
+                            onClick={() => {
+                              setSelectedDataID(dataItem.id);
+                              setSelectedDatas(dataItem);
+                              getPublicUrl(dataItem);
+                              onOpen();
+                            }}
+                            className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
+                          >
+                            VIEW
+                          </button>
                           <button
                             onClick={() => {
                               setSelectedDataID(dataItem.id);
@@ -1894,24 +1906,60 @@ const AdminDashboard: React.FC = () => {
                               >
                                 Front ID
                               </label>
-                              <Image
-                                src={frontIDUrl ? frontIDUrl : "loading"}
-                                alt="First Image Preview"
-                                className="rounded-lg shadow-md my-1"
-                              />
+                              {loadingImageUrl ? (
+                                <div className="flex items-center justify-center min-h-[297px]">
+                                  <LoaderRing />
+                                </div>
+                              ) : (
+                                <div className="min-h-[297px] cursor-pointer flex items-center justify-center border rounded-lg">
+                                  {frontIDUrl ? (
+                                    <Image
+                                      src={frontIDUrl ? frontIDUrl : "loading"}
+                                      onClick={() => {
+                                        window.open(
+                                          frontIDUrl ? frontIDUrl : "",
+                                          "_blank"
+                                        );
+                                      }}
+                                      alt="Front image preview"
+                                      className="rounded-lg shadow-md my-1"
+                                    />
+                                  ) : (
+                                    "No data"
+                                  )}
+                                </div>
+                              )}
                             </div>
                             <div className="sm:col-span-6">
                               <label
                                 htmlFor="city"
                                 className="block text-sm font-medium leading-6 text-gray-900"
                               >
-                                Front ID
+                                Back ID
                               </label>
-                              <Image
-                                src={backIDUrl ? backIDUrl : "Loading"}
-                                alt="second Image Preview"
-                                className="rounded-lg shadow-md my-1"
-                              />
+                              {loadingImageUrl ? (
+                                <div className="flex items-center justify-center min-h-[297px]">
+                                  <LoaderRing />
+                                </div>
+                              ) : (
+                                <div className="min-h-[297px] cursor-pointer flex items-center justify-center border rounded-lg">
+                                  {frontIDUrl ? (
+                                    <Image
+                                      src={backIDUrl ? backIDUrl : "Loading"}
+                                      onClick={() => {
+                                        window.open(
+                                          backIDUrl ? backIDUrl : "",
+                                          "_blank"
+                                        );
+                                      }}
+                                      alt="Front image preview"
+                                      className="rounded-lg shadow-md my-1"
+                                    />
+                                  ) : (
+                                    "No data"
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

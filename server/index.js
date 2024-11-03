@@ -36,6 +36,8 @@ app.get("/test", (req, res) => {
   });
 });
 
+axios.post("/https://api.textlocal.co.uk/send/");
+
 app.get("/get-images", async (req, res) => {
   const { front_id, back_id } = req.query.selectedDatas;
   const accessToken = req.cookies.accessToken;
@@ -53,30 +55,32 @@ app.get("/get-images", async (req, res) => {
 
   let frontId, backId;
 
-  const { data: front, error: errorfront } = supabaseForAuthenticated.storage
-    .from("uploads")
-    .getPublicUrl(front_id);
+  const { data: front, error: errorfront } =
+    await supabaseForAuthenticated.storage
+      .from("uploads")
+      .createSignedUrl(front_id, 32400);
 
   if (errorfront) {
     console.error("error fetching images:", errorfront);
   }
 
   if (front) {
-    console.log("data_get_images:", front.publicUrl);
-    frontId = front.publicUrl;
+    console.log("data_get_images:", front.signedUrl);
+    frontId = front.signedUrl;
   }
 
-  const { data: back, error: errorback } = supabaseForAuthenticated.storage
-    .from("uploads")
-    .getPublicUrl(back_id);
+  const { data: back, error: errorback } =
+    await supabaseForAuthenticated.storage
+      .from("uploads")
+      .createSignedUrl(back_id, 32400);
 
   if (errorback) {
     console.error("error fetching images1:", errorback);
   }
 
   if (back) {
-    console.log("data_get_images1:", back.publicUrl);
-    backId = back.publicUrl;
+    console.log("data_get_images1:", back.signedUrl);
+    backId = back.signedUrl;
   }
 
   return res.send({ frontId, backId });
