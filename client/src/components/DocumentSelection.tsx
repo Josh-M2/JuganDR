@@ -12,6 +12,7 @@ import {
 } from "@headlessui/react";
 import { useNavigate } from "react-router-dom";
 import NavigationBar from "./NavigationBar";
+import Footer from "./Footer";
 
 const documents = [
   {
@@ -55,7 +56,7 @@ const DocumentSelection: React.FC = () => {
       {isAuthenticated ? <NavigationBar /> : ""}
 
       <div className={`${isAuthenticated ? "h-[70vh]" : "h-[95vh]"}`}>
-        <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+        <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 my-[52px] lg:px-8">
           <div className="sm:mx-auto sm:w-full sm:max-w-sm">
             <img
               alt="Barangay Jugan"
@@ -148,6 +149,7 @@ const DocumentSelection: React.FC = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 };

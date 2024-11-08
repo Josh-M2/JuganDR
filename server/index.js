@@ -8,14 +8,14 @@ import multer from "multer";
 import path from "path";
 
 config();
-
+const upload = multer();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = express();
 const port = process.env.PORT;
-const domain = "http://localhost:3001";
+const domain = process.env.SERVER_URL || "http://localhost:3001";
 app.use(
   cors({
     origin: domain,
@@ -36,15 +36,20 @@ app.get("/test", (req, res) => {
   });
 });
 
-axios.post("/https://api.textlocal.co.uk/send/");
+app.get("/get-access-token", async (req, res) => {
+  const accessToken = req.cookies.accessToken;
+
+  return res.status(200).json(accessToken);
+});
 
 app.get("/get-images", async (req, res) => {
   const { front_id, back_id } = req.query.selectedDatas;
   const accessToken = req.cookies.accessToken;
+  console.log(front_id, back_id);
 
-  console.log("req.query", req.query.selectedDatas);
-  console.log("accessToken", accessToken);
-
+  if (!accessToken) {
+    return res.status(401).json({ error: "Access token not found" });
+  }
   const supabaseForAuthenticated = createClient(supabaseUrl, supabaseKey, {
     global: {
       headers: {
@@ -55,18 +60,22 @@ app.get("/get-images", async (req, res) => {
 
   let frontId, backId;
 
-  const { data: front, error: errorfront } =
-    await supabaseForAuthenticated.storage
-      .from("uploads")
-      .createSignedUrl(front_id, 32400);
+  try {
+    const { data: front, error: errorfront } =
+      await supabaseForAuthenticated.storage
+        .from("uploads")
+        .createSignedUrl(front_id, 32400);
 
-  if (errorfront) {
-    console.error("error fetching images:", errorfront);
-  }
+    if (errorfront) {
+      console.error("error fetching images:", errorfront);
+    }
 
-  if (front) {
-    console.log("data_get_images:", front.signedUrl);
-    frontId = front.signedUrl;
+    if (front) {
+      console.log("data_get_images:", front.signedUrl);
+      frontId = front.signedUrl;
+    }
+  } catch (error) {
+    console.error("yawaanimal", error);
   }
 
   const { data: back, error: errorback } =
@@ -131,10 +140,42 @@ app.post("/incoming_request", async (req, res) => {
 
   return res.send("Data Saved");
 });
+app.post("/save-image", upload.single("file"), async (req, res) => {
+  console.log("save-image:", req.body);
+  const path = req.body.path;
+  const file = req.file; // Get the file from req.file instead of req.body
+  console.log("Received file:", req.file);
+
+  try {
+    const { data, error } = await supabase.storage
+      .from("uploads")
+      .upload(path, file, {
+        contentType: file.mimetype, // Set the correct MIME type from the file
+        cacheControl: "3600", // Optional: Cache control for the uploaded file
+        upsert: false, // Prevent overwriting existing files
+      }); // Use file.buffer for binary data
+
+    if (error) {
+      console.error("error saving image", error);
+      return res.status(500).send("Error saving image");
+    }
+    if (data) {
+      console.log("image saved");
+      return res.status(200).json(data);
+    }
+  } catch (error) {
+    console.error("internal save-image error: ", error);
+    return res.status(500).send("Internal server error");
+  }
+});
 
 app.post("/deletefromincoming", async (req, res) => {
   console.log("incoming delete id", req.body);
   const accessToken = req.cookies.accessToken;
+
+  if (!accessToken) {
+    return res.status(401).json({ error: "Access token not found" });
+  }
 
   const supabaseForAuthenticated = createClient(supabaseUrl, supabaseKey, {
     global: {
@@ -163,6 +204,10 @@ app.post("/outgoing_request", async (req, res) => {
   console.log("outgoing request", req.body);
   const accessToken = req.cookies.accessToken;
 
+  if (!accessToken) {
+    return res.status(401).json({ error: "Access token not found" });
+  }
+
   const supabaseForAuthenticated = createClient(supabaseUrl, supabaseKey, {
     global: {
       headers: {
@@ -187,6 +232,10 @@ app.post("/sendtoreleased", async (req, res) => {
   console.log("released request", req.body);
   const accessToken = req.cookies.accessToken;
 
+  if (!accessToken) {
+    return res.status(401).json({ error: "Access token not found" });
+  }
+
   const supabaseForAuthenticated = createClient(supabaseUrl, supabaseKey, {
     global: {
       headers: {
@@ -210,6 +259,9 @@ app.post("/sendtoreleased", async (req, res) => {
 app.post("/deletefromoutgoing", async (req, res) => {
   console.log("outgoing delete id", req.body);
   const accessToken = req.cookies.accessToken;
+  if (!accessToken) {
+    return res.status(401).json({ error: "Access token not found" });
+  }
 
   const supabaseForAuthenticated = createClient(supabaseUrl, supabaseKey, {
     global: {
@@ -283,16 +335,17 @@ app.get("/fetchoutgoing", async (req, res) => {
   try {
     const { data: outgoingIndigency, error: errorOutgoingIndigency } =
       await supabaseForAuthenticated.from("outgoing").select("*");
+
     if (errorOutgoingIndigency) {
-      throw new Error(
-        `outgoing Indigency Error: ${errorOutgoingIndigency.message}`
-      );
+      return res.status(500).json({
+        error: `outgoing Indigency Error: ${errorOutgoingIndigency.message}`,
+      });
     }
 
     return res.status(200).json(outgoingIndigency);
   } catch (error) {
     console.error("Error fetching outgoing data:", error);
-    return res.status(500).json({ error: "server error fetching data" });
+    return res.status(500).json({ error });
   }
 });
 
@@ -397,6 +450,56 @@ app.post("/login", async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: "Internal Server Error" });
   }
+});
+
+app.post("/email-change-password", async (req, res) => {
+  console.log("email-change-password", req.body);
+  const { email } = req.body;
+
+  let { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${domain}/reset-password"`,
+  });
+  if (error) {
+    console.log(error.message);
+    return res.send(data);
+  }
+  res.status(200).json({ message: "Password reset email sent!" });
+});
+
+app.post("/change-password", async (req, res) => {
+  console.log("change-password", req.body);
+  const { currentPassword, newPassword, email } = req.body;
+  const accessToken = req.cookies.accessToken;
+
+  if (!accessToken) {
+    return res.status(200).json(null);
+  }
+
+  try {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email, // assuming `req.user` contains the authenticated user's info
+      password: currentPassword,
+    });
+
+    if (signInError) {
+      return res.send({ message: signInError.code });
+    }
+
+    const { error: errorUpdatePassword } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (errorUpdatePassword) {
+      return res
+        .status(500)
+        .json({ error: "Failed to update password. Please try again later." });
+    }
+  } catch (error) {
+    console.error("internal error change-password", error);
+    return res.status(500).json("internal error change-password", error);
+  }
+
+  res.status(200).json({ message: "Succesfull" });
 });
 
 app.post("/logout", async (req, res) => {

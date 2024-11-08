@@ -21,6 +21,7 @@ import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import NavigationBar from "./NavigationBar";
 import { supabase } from "../config";
+import Footer from "./Footer";
 
 export interface IndigencyForm {
   document: string;
@@ -254,6 +255,24 @@ const FillUpSedula: React.FC = () => {
   };
 
   const handleConfirm = () => {
+    setError({
+      document: "",
+      first_name: "",
+      middle_name: "",
+      last_name: "",
+      ext_name: "",
+      age: "",
+      mobile_num: "",
+      // purpose: "",
+      // purpose_for: "",
+      // school: "",
+      street: "",
+      barangay: "",
+      province: "",
+      city: "",
+      frontID: "",
+      backID: "",
+    });
     const first_nameError = validatefirst_name(form.first_name);
     const middle_nameError = validatemiddle_name(form.middle_name);
     const last_nameError = validatelast_name(form.last_name);
@@ -264,7 +283,7 @@ const FillUpSedula: React.FC = () => {
     const streetError = validatestreet(form.street);
     const provinceError = validateprovince(form.province);
     const barangayError = validatebarangay(form.barangay);
-    const cityError = validatecity(form.barangay);
+    const cityError = validatecity(form.city);
     const frontIDError = validateFrontID(form.frontID);
     const backIDError = validateBackID(form.backID);
 
@@ -323,18 +342,23 @@ const FillUpSedula: React.FC = () => {
       return true;
     }
   };
-
   const uploadFile = async (file: File, path: string) => {
+    const urlEnv = process.env.REACT_APP_SERVER_ACCESS;
+
     const { data, error } = await supabase.storage
-      .from("uploads")
+      .from("uploads") // Replace with your storage bucket name
       .upload(path, file);
+
+    if (data) {
+      console.log("uploadFile", data.path);
+      return data;
+    }
 
     if (error) {
       console.error("Error uploading file:", error);
-      throw error;
     }
 
-    return data;
+    return null;
   };
 
   const handleSubmit = async () => {
@@ -355,7 +379,7 @@ const FillUpSedula: React.FC = () => {
           frontIdObject,
           `uploads/frontID-${Date.now()}.png`
         );
-        frontIDPath = frontIDResponse.path; // Use the path for further processing
+        frontIDPath = frontIDResponse?.path; // Use the path for further processing
       }
 
       if (backIdObject) {
@@ -363,7 +387,7 @@ const FillUpSedula: React.FC = () => {
           backIdObject,
           `uploads/backID-${Date.now()}.png`
         );
-        backIDPath = backIDResponse.path; // Use the path for further processing
+        backIDPath = backIDResponse?.path; // Use the path for further processing
       }
 
       const response = await axios.post(`${urlEnv}incoming_request`, {
@@ -800,26 +824,27 @@ const FillUpSedula: React.FC = () => {
             <button
               type="button"
               onClick={handleButtonClickedBack}
-              className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
+              className="text-sm font-semibold text-gray-900 py-2 px-3 rounded-md border hover:bg-slate-100"
             >
               Back
             </button>
 
-            <Button
-              onClick={() => {
+            <button
+              onClick={(e) => {
+                e.preventDefault();
                 const confirm = handleConfirm();
                 confirm && onOpen();
               }}
               className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               Confirm
-            </Button>
-            <Button
+            </button>
+            {/* <Button
               onClick={clearFormData}
               className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               clear(debug onle)
-            </Button>
+            </Button> */}
           </div>
           <Modal onClose={onClose} isOpen={isOpen} isCentered>
             <ModalOverlay />
@@ -836,7 +861,7 @@ const FillUpSedula: React.FC = () => {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
+                  className="text-sm font-semibold text-gray-900 py-2 px-3 rounded-md border hover:bg-slate-100"
                 >
                   Review
                 </button>
@@ -862,7 +887,7 @@ const FillUpSedula: React.FC = () => {
                       },
                     });
                   }}
-                  className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
+                  className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   Submit
                 </button>
@@ -871,6 +896,7 @@ const FillUpSedula: React.FC = () => {
           </Modal>
         </form>
       </div>
+      <Footer />
     </>
   );
 };
