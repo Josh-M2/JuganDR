@@ -777,10 +777,14 @@ const AdminDashboard: React.FC = () => {
   const fetchIncomingData = async () => {
     setLoadingIncoming(true);
     try {
-      const response = await axios.get(`${urlEnv}fetchincoming`, {
-        withCredentials: true,
-      });
-      processAndSetIncomingData(response.data);
+      // const response = await axios.get(`${urlEnv}fetchincoming`, {
+      //   withCredentials: true,
+      // });
+      // processAndSetIncomingData(response.data);
+      // setLoadingIncoming(false);
+      const { data, error } = await supabase.from("incoming").select("*");
+      console.log("incomingyawa", data);
+      processAndSetIncomingData(data);
       setLoadingIncoming(false);
     } catch (error: any) {
       if (error.response.status == 404) {
