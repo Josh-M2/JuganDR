@@ -19,8 +19,20 @@ import {
   useToast,
   Select,
   Tooltip,
+  Image,
+  Table,
+  TableContainer,
+  TableCaption,
+  Thead,
+  Tr,
+  Th,
+  Td,
+  Tbody,
+  Tfoot,
+  Center,
 } from "@chakra-ui/react";
-import React, { FormEvent, useEffect, useState } from "react";
+
+import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../AdminDashboard.css";
 import axios from "axios";
@@ -30,6 +42,8 @@ import NavigationBar from "./NavigationBar";
 import LoaderRing from "./LoaderRing";
 import trashcan from "./../assets/trash-can.svg";
 import { saveAs } from "file-saver";
+import { parseISO, isAfter, isBefore } from "date-fns";
+import * as XLSX from "xlsx";
 // import * as fs from "fs";
 import {
   Document,
@@ -43,8 +57,16 @@ import {
 } from "docx";
 import logoJugan from "./../assets/Jugan-logo.png";
 import logoConsolacion from "./../assets/Consolacion-logo.png";
+import { url } from "inspector";
+import { createClient } from "@supabase/supabase-js";
+import NotificationBar from "./NotificationBar";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import Footer from "./Footer";
 
-const urlEnv = process.env.REACT_APP_SERVER_ACCESS;
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_KEY || "";
+const urlEnv = process.env.REACT_APP_SERVER_ACCESS || "";
 
 interface data {
   id: number;
@@ -61,15 +83,61 @@ interface data {
   street: string;
   document: string;
   released_date: string;
+  front_id: string;
+  back_id: string;
 }
 
 const AdminDashboard: React.FC = () => {
-  const toast = useToast();
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+  const [accessToken, setAccessToken] = useState<string>("");
+  const [supabase, setSupabase] = useState<any>(null);
+
+  const getAccessToken = async () => {
+    try {
+      const response = await axios.get(`${urlEnv}get-access-token`, {
+        withCredentials: true,
+      });
+      if (response.data) {
+        setAccessToken(response.data);
+      } else {
+        openModalAlert1();
+      }
+    } catch (error) {
+      console.error("Error getting access token:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      getAccessToken();
+    }
+  }, [isAuthenticated]);
+
+  // Initialize Supabase client once accessToken is set
+  useEffect(() => {
+    if (isAuthenticated && accessToken && !supabase) {
+      setSupabase(
+        createClient(supabaseUrl, supabaseAnonKey, {
+          global: {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          },
+        })
+      ); // Store the initialized client in state
+      console.log("supabase client initialized");
+    }
+  }, [accessToken]); // Only run this when `accessToken` changes
+  const toast = useToast();
   const navigate = useNavigate();
-  const [dataIncoming, setDataIncoming] = useState<data[] | null>(null);
-  const [dataOutgoing, setDataOutgoing] = useState<data[] | null>(null);
-  const [dataReleased, setDataReleased] = useState<data[] | null>(null);
+  const [dataIncoming, setDataIncoming] = useState<data[]>([]);
+  const [dataOutgoing, setDataOutgoing] = useState<data[]>([]);
+  const [dataReleased, setDataReleased] = useState<data[]>([]);
+  useEffect(() => {
+    if (dataReleased) {
+      console.log("dataReleased", dataReleased);
+    }
+  }, [dataReleased]);
   const initialRef = React.useRef(null);
   const finalRef = React.useRef(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -85,9 +153,18 @@ const AdminDashboard: React.FC = () => {
   const [loadingDeleteIncoming, setLoadingDeleteIncoming] = useState(false);
   const [loadingSendToOutgoing, setLoadingSendToOutgoing] = useState(false);
   const [loadingSendToReleased, setLoadingSendToReleased] = useState(false);
-
+  const [frontIDUrl, setFrontIDUrl] = useState<string | null>(null);
+  const [backIDUrl, setBackIDUrl] = useState<string | null>(null);
+  const [loadingImageUrl, setLoadingImageUrl] = useState(false);
+  const [images, setImages] = useState<{
+    frontID: string;
+    backID: string;
+  } | null>(null);
   const [selectedDataID, setSelectedDataID] = useState(0);
   const [selectedDatas, setSelectedDatas] = useState<data | null>(null);
+  useEffect(() => {
+    console.log("selectedDatas", selectedDatas);
+  }, [selectedDatas]);
   const [toggleEdit, setToggleEdit] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -100,33 +177,61 @@ const AdminDashboard: React.FC = () => {
   const [currentPageReleasedData, setCurrentPageReleasedData] = useState<
     data[] | null
   >(null);
-  const [totalPages, setTotalPages] = useState(0);
+  const [totalPagesIncoming, setTotalPagesIncoming] = useState(0);
+  const [totalPagesOutgoing, setTotalPagesOutgoing] = useState(0);
+  const [totalPagesReleased, setTotalPagesReleased] = useState(0);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [nameSearch, setNameSearch] = useState("");
   const [activeTab, setActiveTab] = useState(0);
+  useEffect(() => {
+    console.log(activeTab);
+  }, [activeTab]);
   const [deleting, setDeleting] = useState("");
+  const notificationBarRef = useRef<any>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
 
-  const [form, setForm] = useState<IndigencyForm>(() => {
-    console.log("selectedDataID", selectedDataID);
-    const selectedData = dataIncoming?.find(
-      (dataInModal) => dataInModal.id === selectedDataID
-    );
-
-    return {
-      document: selectedData ? selectedData.document : "",
-      first_name: selectedData ? selectedData.first_name : "",
-      middle_name: selectedData ? selectedData.middle_name : "",
-      last_name: selectedData ? selectedData.last_name : "",
-      ext_name: selectedData ? selectedData.ext_name : "",
-      age: selectedData ? selectedData.age : "",
-      mobile_num: selectedData ? selectedData.mobile_num : "",
-      street: selectedData ? selectedData.street : "",
-      barangay: selectedData ? selectedData.barangay : "",
-      province: selectedData ? selectedData.province : "",
-      city: selectedData ? selectedData.city : "",
-    };
+  const [form, setForm] = useState<IndigencyForm>({
+    document: "",
+    first_name: "",
+    middle_name: "",
+    last_name: "",
+    ext_name: "",
+    age: "",
+    mobile_num: "",
+    street: "",
+    barangay: "",
+    province: "",
+    city: "",
+    frontID: "",
+    backID: "",
   });
+
+  useEffect(() => {
+    if (selectedDatas)
+      setForm({
+        document: selectedDatas.document,
+        first_name: selectedDatas.first_name,
+        middle_name: selectedDatas.middle_name,
+        last_name: selectedDatas.last_name,
+        ext_name: selectedDatas.ext_name,
+        age: selectedDatas.age,
+        mobile_num: selectedDatas.mobile_num,
+        street: selectedDatas.street,
+        barangay: selectedDatas.barangay,
+        province: selectedDatas.province,
+        city: selectedDatas.city,
+        frontID: selectedDatas.front_id,
+        backID: selectedDatas.back_id,
+      });
+  }, [selectedDatas]);
+
+  const triggerNotification = () => {
+    if (notificationBarRef.current) {
+      notificationBarRef.current.addNotification();
+    }
+  };
 
   const handleIncomingClick = () => {
     setActiveTab(0);
@@ -194,6 +299,8 @@ const AdminDashboard: React.FC = () => {
         barangay: selectedData.barangay || "",
         province: selectedData.province || "",
         city: selectedData.city || "",
+        frontID: selectedData.front_id || "",
+        backID: selectedData.back_id || "",
       });
     }
   }, [selectedDataID, dataIncoming]);
@@ -213,6 +320,8 @@ const AdminDashboard: React.FC = () => {
     barangay: "",
     province: "",
     city: "",
+    frontID: "",
+    backID: "",
   });
 
   const handleChange = (
@@ -370,6 +479,8 @@ const AdminDashboard: React.FC = () => {
         province: provinceError || "",
         barangay: barangayError || "",
         city: cityError || "",
+        frontID: "",
+        backID: "",
       });
       setToggleEdit(true);
       return false;
@@ -389,6 +500,8 @@ const AdminDashboard: React.FC = () => {
         province: "",
         barangay: "",
         city: "",
+        frontID: "",
+        backID: "",
       });
 
       return true;
@@ -413,77 +526,401 @@ const AdminDashboard: React.FC = () => {
 
     onClose();
     closeModalAlert();
-    fetchIncoming();
+    //fetchIncoming();
     setLoading(false);
   };
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate("/");
+      navigate("/Sign in for Admin");
     }
   }, []);
 
   const refresh = async () => {
     if (activeTab === 0) {
-      fetchIncoming();
+      fetchIncomingData();
     } else if (activeTab === 1) {
-      fetchOutgoing();
+      fetchOutgoingData();
     } else if (activeTab === 2) {
-      fetchReleased();
+      fetchReleasedData();
     }
   };
 
-  const fetchIncoming = async () => {
-    setLoadingIncoming(true);
-    console.log(`${urlEnv}fetchincoming`);
-    try {
-      const response = await axios.get(
-        `${urlEnv}fetchincoming`,
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
 
-        { withCredentials: true }
+  //filtering
+  const processAndSetOutgoingData = (data: data[]) => {
+    let filteredData = data;
+    console.log("outgoind_dataa", data);
+
+    if (selectedFilter !== "All") {
+      filteredData = data.filter((item) => item.document === selectedFilter);
+    }
+
+    if (nameSearch.trim() !== "") {
+      const searchLower = nameSearch.trim().toLowerCase();
+      filteredData = filteredData.filter(
+        (item: data) =>
+          item.first_name.toLowerCase().includes(searchLower) ||
+          item.middle_name.toLowerCase().includes(searchLower) ||
+          item.last_name.toLowerCase().includes(searchLower)
       );
-      if (response.data) {
-        let filteredData = response.data;
+    }
 
-        if (selectedFilter !== "All") {
-          filteredData = response.data.filter(
-            (item: data) => item.document === selectedFilter
+    setTotalPagesOutgoing(Math.ceil(filteredData.length / itemsPerPage));
+    setCurrentPageOutgoingData(
+      filteredData
+        .sort((a, b) => b.id - a.id) // Sorting by id in ascending order
+        .slice(startIndex, startIndex + itemsPerPage)
+    );
+    setDataOutgoing(filteredData);
+  };
+
+  const handleRealtimeOutgoingChange = (payload: any) => {
+    console.log("Outgoing change received!", payload);
+    if (!dataOutgoing) return;
+    setDataOutgoing((prevData) => {
+      let updatedData = [...prevData];
+
+      switch (payload.eventType) {
+        case "INSERT":
+          updatedData = [payload.new, ...prevData];
+
+          break;
+        case "UPDATE":
+          updatedData = updatedData.map((item) =>
+            item.id === payload.new.id ? payload.new : item
           );
-        }
-
-        if (nameSearch.trim() !== "") {
-          const searchLower = nameSearch.trim().toLowerCase();
-
-          filteredData = filteredData.filter(
-            (item: data) =>
-              item.first_name.toLowerCase().includes(searchLower) ||
-              item.middle_name.toLowerCase().includes(searchLower) ||
-              item.last_name.toLowerCase().includes(searchLower)
+          break;
+        case "DELETE":
+          updatedData = updatedData.filter(
+            (item) => item.id !== payload.old.id
           );
-        }
-
-        setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
-        setCurrentPageIncomingData(
-          filteredData
-            .sort((a: { id: number }, b: { id: number }) => a.id - b.id) // Sorting by id in ascending order
-            .slice(startIndex, startIndex + itemsPerPage)
-        );
-
-        setDataIncoming(filteredData);
-        setLoadingIncoming(false);
+          break;
+        default:
+          break;
       }
-    } catch (err: any) {
-      //logout function here if JWT expires
-      console.log(`Error fetching data: ${err.message}`);
-      if (err.response.status == 404) {
+      processAndSetOutgoingData(updatedData);
+      return updatedData;
+    });
+  };
+  //filtering
+  const processAndSetIncomingData = (data: data[]) => {
+    let filteredData = data;
+    console.log("data_incoming_filtered", data);
+
+    if (selectedFilter !== "All") {
+      filteredData = data.filter((item) => item.document === selectedFilter);
+    }
+
+    if (nameSearch.trim() !== "") {
+      const searchLower = nameSearch.trim().toLowerCase();
+      filteredData = filteredData.filter(
+        (item: data) =>
+          item.first_name.toLowerCase().includes(searchLower) ||
+          item.middle_name.toLowerCase().includes(searchLower) ||
+          item.last_name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    setTotalPagesIncoming(Math.ceil(filteredData.length / itemsPerPage));
+    setCurrentPageIncomingData(
+      filteredData
+        .sort((a, b) => b.id - a.id) // Sorting by id in ascending order
+        .slice(startIndex, startIndex + itemsPerPage)
+    );
+    setDataIncoming(filteredData);
+  };
+
+  const handleRealtimeIncomingChange = (payload: any) => {
+    console.log("Incoming change received!", payload);
+    if (!dataIncoming) return;
+
+    setDataIncoming((prevData) => {
+      let updatedData = [...prevData];
+
+      switch (payload.eventType) {
+        case "INSERT":
+          updatedData = [payload.new, ...prevData];
+          triggerNotification();
+          break;
+        case "UPDATE":
+          updatedData = updatedData.map((item) =>
+            item.id === payload.new.id ? payload.new : item
+          );
+          break;
+        case "DELETE":
+          updatedData = updatedData.filter(
+            (item) => item.id !== payload.old.id
+          );
+          break;
+        default:
+          break;
+      }
+      processAndSetIncomingData(updatedData);
+      return updatedData;
+    });
+  };
+
+  //filtering
+  const processAndSetReleasedData = (data: data[]) => {
+    let filteredData = data;
+
+    if (selectedFilter !== "All") {
+      filteredData = data.filter((item) => item.document === selectedFilter);
+    }
+
+    if (nameSearch.trim() !== "") {
+      const searchLower = nameSearch.trim().toLowerCase();
+      filteredData = filteredData.filter(
+        (item: data) =>
+          item.first_name.toLowerCase().includes(searchLower) ||
+          item.middle_name.toLowerCase().includes(searchLower) ||
+          item.last_name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (startDate || endDate) {
+      filteredData = filteredData.filter((item) => {
+        const itemDate =
+          typeof item.released_date === "string"
+            ? parseISO(item.released_date)
+            : item.released_date;
+
+        if (startDate && !endDate) {
+          // Only startDate is set; include items on or after startDate
+          return (
+            isAfter(itemDate, startDate) ||
+            itemDate.getTime() === startDate.getTime()
+          );
+        } else if (endDate && !startDate) {
+          // Only endDate is set; include items on or before endDate
+          return (
+            isBefore(itemDate, endDate) ||
+            itemDate.getTime() === endDate.getTime()
+          );
+        } else if (startDate && endDate) {
+          // Both startDate and endDate are set; include items within the date range
+          return (
+            (isAfter(itemDate, startDate) ||
+              itemDate.getTime() === startDate.getTime()) &&
+            (isBefore(itemDate, endDate) ||
+              itemDate.getTime() === endDate.getTime())
+          );
+        }
+        return true; // Include all if no dates are set
+      });
+    }
+
+    setTotalPagesReleased(Math.ceil(filteredData.length / itemsPerPage));
+    setCurrentPageReleasedData(
+      filteredData
+        .sort((a, b) => b.id - a.id) // Sorting by id in ascending order
+        .slice(startIndex, startIndex + itemsPerPage)
+    );
+    setDataReleased(filteredData);
+  };
+
+  const handleRealtimeReleasedChange = (payload: any) => {
+    console.log("Incoming change received!", payload);
+    if (!dataReleased) return;
+
+    setDataReleased((prevData) => {
+      let updatedData = [...prevData];
+
+      switch (payload.eventType) {
+        case "INSERT":
+          updatedData = [payload.new, ...prevData];
+          break;
+        case "UPDATE":
+          updatedData = updatedData.map((item) =>
+            item.id === payload.new.id ? payload.new : item
+          );
+          break;
+        case "DELETE":
+          updatedData = updatedData.filter(
+            (item) => item.id !== payload.old.id
+          );
+          break;
+        default:
+          break;
+      }
+      processAndSetReleasedData(updatedData);
+      return updatedData;
+    });
+  };
+
+  const fetchOutgoingData = async () => {
+    setLoadingOutgoing(true);
+    try {
+      const response = await axios.get(`${urlEnv}fetchoutgoing`, {
+        withCredentials: true,
+      });
+      console.log("dataoutgoing", response.data);
+
+      processAndSetOutgoingData(response.data);
+      setLoadingOutgoing(false);
+    } catch (error: any) {
+      if (error.response.status == 404) {
+        setLoadingOutgoing(false);
+        processAndSetOutgoingData([]);
+      } else if (error.response.status === 401) {
+        setLoadingOutgoing(false);
+        openModalAlert1();
+      }
+    }
+    setLoadingOutgoing(false);
+  };
+
+  const fetchIncomingData = async () => {
+    setLoadingIncoming(true);
+    try {
+      const response = await axios.get(`${urlEnv}fetchincoming`, {
+        withCredentials: true,
+      });
+      processAndSetIncomingData(response.data);
+      setLoadingIncoming(false);
+    } catch (error: any) {
+      if (error.response.status == 404) {
         setLoadingIncoming(false);
-        setDataIncoming([]);
-      } else if (err.response.status === 401) {
+        processAndSetIncomingData([]);
+      } else if (error.response.status === 401) {
         setLoadingIncoming(false);
         openModalAlert1();
       }
     }
+    setLoadingIncoming(false);
   };
+
+  const fetchReleasedData = async () => {
+    setLoadingReleased(true);
+    try {
+      const response = await axios.get(
+        `${urlEnv}fetchreleased`,
+
+        { withCredentials: true }
+      );
+      processAndSetReleasedData(response.data);
+      setLoadingReleased(false);
+    } catch (error: any) {
+      if (error.response.status == 404) {
+        setLoadingReleased(false);
+        processAndSetReleasedData([]);
+      } else if (error.response.status === 401) {
+        setLoadingReleased(false);
+        openModalAlert1();
+      }
+    }
+    setLoadingReleased(false);
+  };
+
+  useEffect(() => {
+    // Initial fetch for outgoing data
+    if (supabase) {
+      fetchIncomingData();
+
+      fetchOutgoingData();
+
+      fetchReleasedData();
+
+      // Real-time subscription for outgoing data
+      const outgoingSubscription = supabase
+        .channel("outgoing")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "outgoing" },
+          handleRealtimeOutgoingChange
+        )
+        .subscribe();
+
+      // Real-time subscription for incoming data
+      const incomingSubscription = supabase
+        .channel("incoming")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "incoming" },
+          handleRealtimeIncomingChange
+        )
+        .subscribe();
+
+      const releasedSubscription = supabase
+        .channel("released")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "released" },
+          handleRealtimeReleasedChange
+        )
+        .subscribe();
+
+      // Cleanup on component unmount
+      return () => {
+        outgoingSubscription.unsubscribe();
+        incomingSubscription.unsubscribe();
+        releasedSubscription.unsubscribe();
+      };
+    }
+  }, [
+    supabase,
+    selectedFilter,
+    startDate,
+    endDate,
+    nameSearch,
+    startIndex,
+    itemsPerPage,
+  ]);
+
+  // const fetchIncoming = async () => {
+  //   setLoadingIncoming(true);
+  //   console.log(`${urlEnv}fetchincoming`);
+  //   try {
+  //     const response = await axios.get(
+  //       `${urlEnv}fetchincoming`,
+  //       { withCredentials: true }
+  //     );
+  //     if (response.data) {
+  //       let filteredData = response.data;
+
+  //       if (selectedFilter !== "All") {
+  //         filteredData = response.data.filter(
+  //           (item: data) => item.document === selectedFilter
+  //         );
+  //       }
+
+  //       if (nameSearch.trim() !== "") {
+  //         const searchLower = nameSearch.trim().toLowerCase();
+
+  //         filteredData = filteredData.filter(
+  //           (item: data) =>
+  //             item.first_name.toLowerCase().includes(searchLower) ||
+  //             item.middle_name.toLowerCase().includes(searchLower) ||
+  //             item.last_name.toLowerCase().includes(searchLower)
+  //         );
+  //       }
+
+  //       setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
+  //       setCurrentPageIncomingData(
+  //         filteredData
+  //           .sort((a: { id: number }, b: { id: number }) => a.id - b.id) // Sorting by id in ascending order
+  //           .slice(startIndex, startIndex + itemsPerPage)
+  //       );
+
+  //       setDataIncoming(filteredData);
+  //       setLoadingIncoming(false);
+  //     }
+  //   } catch (err: any) {
+  //     //logout function here if JWT expires
+  //     console.log(`Error fetching data: ${err}`);
+  //     if (err.response.status == 404) {
+  //       setLoadingIncoming(false);
+  //       setDataIncoming([]);
+  //     } else if (err.response.status === 401) {
+  //       setLoadingIncoming(false);
+  //       openModalAlert1();
+  //     }
+  //   }
+  // };
 
   const deleteFromIncoming = async (id: number) => {
     console.log("deleteFromIncoming", id);
@@ -503,7 +940,7 @@ const AdminDashboard: React.FC = () => {
         console.log(response.data);
 
         console.log(response.data);
-        await fetchIncoming();
+        // await fetchIncoming();
       }
     } catch (err: any) {
       console.error(`Error deleting data: ${err.message}`);
@@ -512,58 +949,58 @@ const AdminDashboard: React.FC = () => {
     closeModalAlert2();
   };
 
-  const fetchOutgoing = async () => {
-    setLoadingOutgoing(true);
-    console.log(`${urlEnv}fetchOutgoing`);
-    try {
-      const response = await axios.get(
-        `${urlEnv}fetchoutgoing`,
+  // const fetchOutgoing = async () => {
+  //   setLoadingOutgoing(true);
+  //   console.log(`${urlEnv}fetchOutgoing`);
+  //   try {
+  //     const response = await axios.get(
+  //       `${urlEnv}fetchoutgoing`,
 
-        { withCredentials: true }
-      );
-      if (response.data) {
-        let filteredData = response.data;
+  //       { withCredentials: true }
+  //     );
+  //     if (response.data) {
+  //       let filteredData = response.data;
 
-        if (selectedFilter !== "All") {
-          filteredData = response.data.filter(
-            (item: data) => item.document === selectedFilter
-          );
-        }
+  //       if (selectedFilter !== "All") {
+  //         filteredData = response.data.filter(
+  //           (item: data) => item.document === selectedFilter
+  //         );
+  //       }
 
-        if (nameSearch.trim() !== "") {
-          const searchLower = nameSearch.trim().toLowerCase();
+  //       if (nameSearch.trim() !== "") {
+  //         const searchLower = nameSearch.trim().toLowerCase();
 
-          filteredData = filteredData.filter(
-            (item: data) =>
-              item.first_name.toLowerCase().includes(searchLower) ||
-              item.middle_name.toLowerCase().includes(searchLower) ||
-              item.last_name.toLowerCase().includes(searchLower)
-          );
-        }
+  //         filteredData = filteredData.filter(
+  //           (item: data) =>
+  //             item.first_name.toLowerCase().includes(searchLower) ||
+  //             item.middle_name.toLowerCase().includes(searchLower) ||
+  //             item.last_name.toLowerCase().includes(searchLower)
+  //         );
+  //       }
 
-        // console.log("incoming datas", filteredData);
-        setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
-        setCurrentPageOutgoingData(
-          filteredData
-            .sort((a: { id: number }, b: { id: number }) => a.id - b.id) // Sorting by id in ascending order
-            .slice(startIndex, startIndex + itemsPerPage)
-        );
+  //       // console.log("incoming datas", filteredData);
+  //       setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
+  //       setCurrentPageOutgoingData(
+  //         filteredData
+  //           .sort((a: { id: number }, b: { id: number }) => a.id - b.id) // Sorting by id in ascending order
+  //           .slice(startIndex, startIndex + itemsPerPage)
+  //       );
 
-        setDataOutgoing(filteredData);
-        setLoadingOutgoing(false);
-      }
-    } catch (err: any) {
-      //logout function here if JWT expires
-      console.log(`Error fetching data: ${err.message}`);
-      if (err.response.status == 404) {
-        setLoadingOutgoing(false);
-        setDataOutgoing(null);
-      } else if (err.response.status === 401) {
-        setLoadingOutgoing(false);
-        openModalAlert1();
-      }
-    }
-  };
+  //       setDataOutgoing(filteredData);
+  //       setLoadingOutgoing(false);
+  //     }
+  //   } catch (err: any) {
+  //     //logout function here if JWT expires
+  //     console.log(`Error fetching data: ${err.message}`);
+  //     if (err.response.status == 404) {
+  //       setLoadingOutgoing(false);
+  //       setDataOutgoing(null);
+  //     } else if (err.response.status === 401) {
+  //       setLoadingOutgoing(false);
+  //       openModalAlert1();
+  //     }
+  //   }
+  // };
 
   const deleteFromOutgoing = async (id: number) => {
     console.log("deleteFromOutgoing", id);
@@ -583,7 +1020,7 @@ const AdminDashboard: React.FC = () => {
         console.log(response.data);
 
         console.log(response.data);
-        await fetchOutgoing();
+        // await fetchOutgoing();
       }
     } catch (err: any) {
       console.error(`Error deleting data: ${err.message}`);
@@ -636,129 +1073,135 @@ const AdminDashboard: React.FC = () => {
     setLoadingSendToReleased(true);
   };
 
-  const fetchReleased = async () => {
-    setLoadingReleased(true);
-    console.log(`${urlEnv}fetchReleased`);
-    try {
-      const response = await axios.get(
-        `${urlEnv}fetchreleased`,
+  // const fetchReleased = async () => {
+  //   setLoadingReleased(true);
+  //   console.log(`${urlEnv}fetchReleased`);
+  //   try {
+  //     const response = await axios.get(
+  //       `${urlEnv}fetchreleased`,
 
-        { withCredentials: true }
-      );
-      if (response.data) {
-        let filteredData = response.data;
+  //       { withCredentials: true }
+  //     );
+  //     if (response.data) {
+  //       let filteredData = response.data;
 
-        if (selectedFilter !== "All") {
-          filteredData = response.data.filter(
-            (item: data) => item.document === selectedFilter
-          );
-        }
+  //       if (selectedFilter !== "All") {
+  //         filteredData = response.data.filter(
+  //           (item: data) => item.document === selectedFilter
+  //         );
+  //       }
 
-        if (nameSearch.trim() !== "") {
-          const searchLower = nameSearch.trim().toLowerCase();
+  //       if (nameSearch.trim() !== "") {
+  //         const searchLower = nameSearch.trim().toLowerCase();
 
-          filteredData = filteredData.filter(
-            (item: data) =>
-              item.first_name.toLowerCase().includes(searchLower) ||
-              item.middle_name.toLowerCase().includes(searchLower) ||
-              item.last_name.toLowerCase().includes(searchLower)
-          );
-        }
+  //         filteredData = filteredData.filter(
+  //           (item: data) =>
+  //             item.first_name.toLowerCase().includes(searchLower) ||
+  //             item.middle_name.toLowerCase().includes(searchLower) ||
+  //             item.last_name.toLowerCase().includes(searchLower)
+  //         );
+  //       }
 
-        // console.log("incoming datas", filteredData);
-        setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
-        setCurrentPageReleasedData(
-          filteredData
-            .sort((a: { id: number }, b: { id: number }) => a.id - b.id) // Sorting by id in ascending order
-            .slice(startIndex, startIndex + itemsPerPage)
-        );
+  //       // console.log("incoming datas", filteredData);
+  //       setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
+  //       setCurrentPageReleasedData(
+  //         filteredData
+  //           .sort((a: { id: number }, b: { id: number }) => a.id - b.id) // Sorting by id in ascending order
+  //           .slice(startIndex, startIndex + itemsPerPage)
+  //       );
 
-        setDataReleased(filteredData);
-        setLoadingReleased(false);
-      }
-    } catch (err: any) {
-      //logout function here if JWT expires
-      console.log(`Error fetching data: ${err.message}`);
-      if (err.response.status == 404) {
-        setLoadingReleased(false);
-        setDataReleased(null);
-      } else if (err.response.status === 401) {
-        setLoadingReleased(false);
-        openModalAlert1();
-      }
-    }
-  };
+  //       setDataReleased(filteredData);
+  //       setLoadingReleased(false);
+  //     }
+  //   } catch (err: any) {
+  //     //logout function here if JWT expires
+  //     console.log(`Error fetching data: ${err.message}`);
+  //     if (err.response.status == 404) {
+  //       setLoadingReleased(false);
+  //       setDataReleased(null);
+  //     } else if (err.response.status === 401) {
+  //       setLoadingReleased(false);
+  //       openModalAlert1();
+  //     }
+  //   }
+  // };
 
   //fetch upon mount
-  useEffect(() => {
-    if (activeTab === 0) {
-      fetchIncoming();
-      const interval = setInterval(fetchIncoming, 60000);
-      return () => clearInterval(interval);
-    } else if (activeTab === 1) {
-      fetchOutgoing();
-      const interval = setInterval(fetchOutgoing, 60000);
-      return () => clearInterval(interval);
-    } else if (activeTab === 2) {
-      fetchReleased();
-      const interval = setInterval(fetchOutgoing, 60000);
-      return () => clearInterval(interval);
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (activeTab === 0) {
+  //     fetchIncoming();
+  //     const interval = setInterval(fetchIncoming, 60000);
+  //     return () => clearInterval(interval);
+  //   } else
+  //   if (activeTab === 1) {
+  //     fetchOutgoing();
+  //     const interval = setInterval(fetchOutgoing, 60000);
+  //     return () => clearInterval(interval);
+  //   } else
+  //   if (activeTab === 2) {
+  //     fetchReleased();
+  //     const interval = setInterval(fetchReleased, 60000);
+  //     return () => clearInterval(interval);
+  //   }
+  // }, []);
 
   //for paging
-  useEffect(() => {
-    if (activeTab === 0 && dataIncoming) {
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      setCurrentPageIncomingData(
-        dataIncoming.slice(startIndex, startIndex + itemsPerPage)
-      );
-    }
-  }, [activeTab, currentPage, dataIncoming]);
+  // useEffect(() => {
+  //   if (activeTab === 0 && dataIncoming) {
+  //     const startIndex = (currentPage - 1) * itemsPerPage;
+  //     setCurrentPageIncomingData(
+  //       dataIncoming.slice(startIndex, startIndex + itemsPerPage)
+  //     );
+  //   }
+  // }, [activeTab, currentPage, dataIncoming]);
 
-  useEffect(() => {
-    if (activeTab === 1 && dataOutgoing) {
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      setCurrentPageOutgoingData(
-        dataOutgoing.slice(startIndex, startIndex + itemsPerPage)
-      );
-    }
-  }, [activeTab, currentPage, dataOutgoing]);
+  // useEffect(() => {
+  //   if (activeTab === 1 && dataOutgoing) {
+  //     const startIndex = (currentPage - 1) * itemsPerPage;
+  //     setCurrentPageOutgoingData(
+  //       dataOutgoing.slice(startIndex, startIndex + itemsPerPage)
+  //     );
+  //   }
+  // }, [activeTab, currentPage, dataOutgoing]);
 
-  useEffect(() => {
-    if (activeTab === 2 && dataReleased) {
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      setCurrentPageReleasedData(
-        dataReleased.slice(startIndex, startIndex + itemsPerPage)
-      );
-    }
-  }, [activeTab, currentPage, dataReleased]);
+  // useEffect(() => {
+  //   if (activeTab === 2 && dataReleased) {
+  //     const startIndex = (currentPage - 1) * itemsPerPage;
+  //     setCurrentPageReleasedData(
+  //       dataReleased.slice(startIndex, startIndex + itemsPerPage)
+  //     );
+  //   }
+  // }, [activeTab, currentPage, dataReleased]);
 
   //for filtering
-  useEffect(() => {
-    if (activeTab === 0) {
-      fetchIncoming();
-    }
-  }, [activeTab, selectedFilter, currentPage, nameSearch]);
+  // useEffect(() => {
+  //   if (activeTab === 0) {
+  //     fetchIncoming();
+  //   }
+  // }, [activeTab, selectedFilter, currentPage, nameSearch]);
 
-  useEffect(() => {
-    if (activeTab === 1) {
-      fetchOutgoing();
-    }
-  }, [activeTab, selectedFilter, currentPage, nameSearch]);
+  // useEffect(() => {
+  //   if (activeTab === 1) {
+  //     fetchOutgoing();
+  //   }
+  // }, [activeTab, selectedFilter, currentPage, nameSearch]);
 
-  useEffect(() => {
-    if (activeTab === 2) {
-      fetchReleased();
-    }
-  }, [activeTab, selectedFilter, currentPage, nameSearch]);
+  // useEffect(() => {
+  //   if (activeTab === 2) {
+  //     fetchReleased();
+  //   }
+  // }, [activeTab, selectedFilter, currentPage, nameSearch]);
 
   const toUpperCase = (value: unknown): string => {
     return typeof value === "string" ? value.toUpperCase() : String(value);
   };
 
-  const generateWordDocument = async (data: any) => {
-    console.log("generateWordDocumentgenerateWordDocument", data);
+  const generateWordDocumentIndigency = async (data: any) => {
+    //indigency
+    if (data.document !== "Barangay Indigency") {
+      return;
+    }
+    console.log("generateWordDocumentgenerateWordDocumentIndigency", data);
     const {
       age,
       barangay,
@@ -1097,430 +1540,670 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
+  const getPublicUrl = async (datas: any) => {
+    setLoadingImageUrl(true);
+    console.log("datas", datas);
+    const response = await axios.get(`${urlEnv}get-images`, {
+      params: { selectedDatas: datas },
+      withCredentials: true,
+    });
+    if (response.data) {
+      console.log("response.data", response);
+      console.log("responsefrontId", response.data.frontId);
+      console.log("responsebackid", response.data.backId);
+      setFrontIDUrl(response.data.frontId);
+      setBackIDUrl(response.data.backId);
+    }
+    setLoadingImageUrl(false);
+  };
+
+  const handleExport = () => {
+    if (!dataReleased || dataReleased.length <= 0) {
+      return;
+    }
+
+    const formattedData = dataReleased.map((item) => {
+      const fullName = ` ${toUpperCase(item.first_name)} ${toUpperCase(
+        item.middle_name[0]
+      )}. ${toUpperCase(item.last_name)}${
+        item.ext_name ? ` ${toUpperCase(item.ext_name)},` : ","
+      }`;
+
+      const released_date =
+        typeof item.released_date === "string"
+          ? parseISO(item.released_date)
+          : item.released_date;
+
+      const document = toUpperCase(item.document);
+
+      return {
+        Name: fullName,
+        Document: document,
+        Released_date: released_date,
+      };
+    });
+
+    let data = formattedData.map((item) => ({
+      Full_name: item.Name,
+      Document_type: item.Document,
+      Released_date: item.Released_date
+        ? item.Released_date.toLocaleDateString()
+        : "Invalid Date",
+    }));
+
+    // data = [
+    //   {
+    //     Start_Date:
+    //       typeof startDate === "string"
+    //         ? parseISO(startDate).toDateString()
+    //         : "No data",
+
+    //     End_Date:
+    //       typeof endDate === "string"
+    //         ? parseISO(endDate).toDateString()
+    //         : "No data",
+    //   },
+    //   ...data,
+    // ];
+
+    // Convert JSON data to a worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+
+    // Append the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+    // Generate a downloadable Excel file
+    XLSX.writeFile(
+      workbook,
+      `${startDate?.toLocaleDateString() || ""}${startDate ? " TO " : ""}${
+        endDate?.toLocaleDateString() || ""
+      }${endDate ? " - " : ""}${selectedFilter} document released.xlsx`
+    );
+  };
+
   return (
     <>
       <NavigationBar />
 
-      <div className="m-5 flex flex-row gap-3 justify-between items-center">
-        <h1 className="text-[26px] font-semibold">Admin Dashboard</h1>
-        <div className="flex flex-row items-center gap-3">
-          {activeTab === 2 ? (
-            <button className="rounded-xl py-4 px-6  text-slate-50 bg-blue-500 hover:bg-blue-600">
-              Export
-            </button>
-          ) : (
-            ""
-          )}
-          <button
-            onClick={refresh}
-            className="rounded-xl py-4 px-6  text-slate-50 bg-blue-500 hover:bg-blue-600"
-          >
-            Refresh
-          </button>
-          <div className="flex flex-col">
-            <label htmlFor="type" className="text-[12px] text-gray-400">
-              Document Type:
-            </label>
-            <Select
-              id="type"
-              width="auto"
-              onChange={(e) => setSelectedFilter(e.target.value)}
-              value={selectedFilter}
+      <div className="custom-width !mb-5">
+        <div className="m-5 flex flex-row gap-3 justify-between items-center">
+          <h1 className="text-[24px] font-semibold">Admin Dashboard</h1>
+          <div className="flex flex-row items-center gap-3">
+            <button
+              onClick={refresh}
+              className="rounded-xl py-4 px-6 text-slate-50 bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
-              <option value="All">All</option>
-              <option value="Indigency">Barangay Indigency</option>
-              <option value="Sedula">Sedula</option>
-              <option value="Barangay Clearance">Barangay Clearance</option>
-              <option value="test">test loader</option>
-            </Select>
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="search" className="text-[12px] text-gray-400">
-              Search:
-            </label>
-            <Input
-              id="search"
-              placeholder="Search by Name"
-              width="auto"
-              value={nameSearch}
-              onChange={(e) => {
-                setNameSearch(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
+              Refresh
+            </button>
+            {activeTab === 2 ? (
+              <button
+                onClick={handleExport}
+                className="rounded-xl py-4 px-6  text-slate-50 bg-indigo-600 hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              >
+                Export
+              </button>
+            ) : (
+              ""
+            )}
+            <div className="flex flex-col">
+              <label htmlFor="type" className="text-[12px] text-gray-400">
+                Document Type:
+              </label>
+              <Select
+                id="type"
+                width="auto"
+                onChange={(e) => setSelectedFilter(e.target.value)}
+                value={selectedFilter}
+              >
+                <option value="All">All</option>
+                <option value="Barangay Indigency">Barangay Indigency</option>
+                <option value="Sedula">Sedula</option>
+                <option value="Barangay Clearance">Barangay Clearance</option>
+                <option value="test">test loader</option>
+              </Select>
+            </div>
+            {activeTab === 2 && (
+              <>
+                <div className="flex flex-col">
+                  <label htmlFor="type" className="text-[12px] text-gray-400">
+                    Select start date:
+                  </label>
+                  <DatePicker
+                    selected={startDate}
+                    onChange={(date) => setStartDate(date)}
+                    selectsStart
+                    startDate={startDate || undefined}
+                    endDate={endDate || undefined}
+                    customInput={<Input />}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label htmlFor="type" className="text-[12px] text-gray-400">
+                    Select end date:
+                  </label>
+                  <DatePicker
+                    selected={endDate}
+                    onChange={(date) => setEndDate(date)}
+                    selectsEnd
+                    startDate={startDate || undefined}
+                    endDate={endDate || undefined}
+                    minDate={startDate || undefined}
+                    customInput={<Input />}
+                  />
+                </div>
+              </>
+            )}
+
+            {activeTab !== 2 && (
+              <div className="flex flex-col">
+                <label htmlFor="search" className="text-[12px] text-gray-400">
+                  Search:
+                </label>
+                <Input
+                  id="search"
+                  placeholder="Search by Name"
+                  width="auto"
+                  value={nameSearch}
+                  onChange={(e) => {
+                    e.preventDefault();
+                    setNameSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      <div className="flex flex-col">
-        <Tabs
-          size="lg"
-          variant="enclosed"
-          index={activeTab}
-          onChange={setActiveTab}
-        >
-          <TabList className="justify-evenly">
-            <Tab className="w-[374.53px]" onClick={handleIncomingClick}>
-              Incoming
-            </Tab>
-            <Tab className="w-[374.53px]" onClick={handleOutgoingClick}>
-              Outgoing
-            </Tab>
-            <Tab className="w-[374.53px]" onClick={handleReleasedClick}>
-              Released
-            </Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel className="!px-0 !pt-0">
-              <div className="flex flex-row justify-between m-4">
-                <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
-                  Names
-                </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
-                  Documents
-                </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[34vh] text-slate-600">
-                  Actions
-                </div>
-              </div>
-
-              <div className="h-[366px] max-h-[366px]">
-                {loadingIncoming ? (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    <LoaderRing />
-                  </div>
-                ) : Array.isArray(dataIncoming) && dataIncoming.length > 0 ? (
-                  currentPageIncomingData?.map((dataItem, index) => (
-                    <div
-                      key={dataItem.id}
-                      className={`py-4 px-3 flex flex-row justify-between items-center ${
-                        index % 2 === 0 ? "bg-slate-50" : ""
-                      }`}
-                    >
-                      <div className="w-[60vh] justify-center">
-                        <div className="flex flex-row gap-5">
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Last name
-                            </span>
-                            <span>{dataItem.last_name}</span>
+        <div className="flex flex-col">
+          <Tabs
+            size="lg"
+            variant="enclosed"
+            index={activeTab}
+            onChange={setActiveTab}
+          >
+            <TabList className="justify-evenly">
+              <Tab className="w-[374.53px]" onClick={handleIncomingClick}>
+                Incoming
+              </Tab>
+              <Tab className="w-[374.53px]" onClick={handleOutgoingClick}>
+                Outgoing
+              </Tab>
+              <Tab className="w-[374.53px]" onClick={handleReleasedClick}>
+                Released
+              </Tab>
+            </TabList>
+            <TabPanels>
+              <TabPanel className="!px-0 !pt-0">
+                <TableContainer height="408px">
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th width="568px">
+                          <div className="flex justify-center text-slate-600">
+                            Names
                           </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              First name
-                            </span>
-                            <span>{dataItem.first_name}</span>
+                        </Th>
+                        <Th width="197px">
+                          <div className="flex justify-center text-slate-600">
+                            Documents
                           </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Middle name
-                            </span>
-                            <span>{dataItem.middle_name}</span>
+                        </Th>
+                        <Th width="346px">
+                          <div className="flex justify-center text-slate-600">
+                            Actions
                           </div>
-                        </div>
-                      </div>
-
-                      <div className="w-[30vh] flex justify-center">
-                        <span>{dataItem.document}</span>
-                      </div>
-                      <div className="flex flex-row gap-5 w-[34vh] justify-center">
-                        <button
-                          onClick={() => {
-                            setSelectedDataID(dataItem.id);
-                            setSelectedDatas(dataItem);
-                            onOpen();
-                          }}
-                          className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
-                        >
-                          VIEW
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setSelectedDatas(dataItem);
-                            openModalAlert3();
-                          }}
-                          className="rounded-xl py-1 px-3 text-slate-50 bg-blue-500 hover:bg-blue-600"
-                        >
-                          ACCEPT
-                        </button>
-
-                        <Tooltip label="Delete" aria-label="A tooltip">
-                          <button
-                            className="w-[17px]"
-                            onClick={() => {
-                              setSelectedDataID(dataItem.id);
-                              setDeleting("incoming");
-                              openModalAlert2();
-                            }}
+                        </Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {loadingIncoming ? (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center">
+                              <LoaderRing />
+                            </div>
+                          </Td>
+                        </Tr>
+                      ) : // </div>
+                      Array.isArray(dataIncoming) && dataIncoming.length > 0 ? (
+                        currentPageIncomingData?.map((dataItem, index) => (
+                          <Tr
+                            key={dataItem.id}
+                            className={`${
+                              index % 2 === 0 ? "bg-slate-50" : ""
+                            } !h-[73.19px]`}
+                            height="73.19px"
                           >
-                            <img
-                              //image-button-size
-                              className="w-[17px]"
-                              src={trashcan}
-                              alt={"trashcan"}
-                            />
-                          </button>
-                        </Tooltip>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    No Result
-                  </div>
-                )}
-              </div>
+                            <Td className="h-[73.19px]" height="73.19px">
+                              <div className="justify-center">
+                                <div className="flex flex-row gap-3">
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Last name
+                                    </span>
+                                    <span>{dataItem.last_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      First name
+                                    </span>
+                                    <span>{dataItem.first_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Middle name
+                                    </span>
+                                    <span>{dataItem.middle_name}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]" height="73.19px">
+                              <div className="flex justify-center">
+                                <span>{dataItem.document}</span>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]" height="73.19px">
+                              <div className="flex flex-row gap-3 justify-center">
+                                <button
+                                  onClick={() => {
+                                    setSelectedDataID(dataItem.id);
+                                    setSelectedDatas(dataItem);
+                                    getPublicUrl(dataItem);
+                                    onOpen();
+                                  }}
+                                  className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
+                                >
+                                  View
+                                </button>
 
-              {/* Pagination Controls */}
-              <div className="flex justify-center mt-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="px-3 py-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            </TabPanel>
-            <TabPanel className="!px-0 !pt-0">
-              <div className="flex flex-row justify-between m-4">
-                <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
-                  Names
+                                <button
+                                  onClick={() => {
+                                    setSelectedDatas(dataItem);
+                                    openModalAlert3();
+                                  }}
+                                  className="rounded-xl py-1 px-3 text-slate-50 bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                                >
+                                  Accept
+                                </button>
+
+                                <Tooltip label="Delete" aria-label="A tooltip">
+                                  <button
+                                    className="w-[17px]"
+                                    onClick={() => {
+                                      setSelectedDataID(dataItem.id);
+                                      setDeleting("incoming");
+                                      openModalAlert2();
+                                    }}
+                                  >
+                                    <img
+                                      //image-button-size
+                                      className="w-[17px]"
+                                      src={trashcan}
+                                      alt={"trashcan"}
+                                    />
+                                  </button>
+                                </Tooltip>
+                              </div>
+                            </Td>
+                          </Tr>
+                        ))
+                      ) : (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center text-[16px] text-gray-400">
+                              No Result
+                            </div>
+                          </Td>
+                        </Tr>
+                      )}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+                <div className="flex mt-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 mx-1 border rounded disabled:opacity-50 ${
+                      currentPage === 1 ? `` : `hover:bg-slate-100 `
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <span className="px-3 py-2">
+                    Page {currentPage} of {totalPagesIncoming}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(prev + 1, totalPagesIncoming)
+                      )
+                    }
+                    disabled={currentPage === totalPagesIncoming}
+                    className={`px-3 py-2 mx-1 border rounded disabled:opacity-50 ${
+                      currentPage === totalPagesIncoming
+                        ? ``
+                        : `hover:bg-slate-100 `
+                    }`}
+                  >
+                    Next
+                  </button>
                 </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
-                  Documents
-                </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[38vh] text-slate-600">
-                  Actions
-                </div>
-              </div>
-
-              <div className="h-[366px] max-h-[366px]">
-                {loadingOutgoing ? (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    <LoaderRing />
-                  </div>
-                ) : Array.isArray(dataOutgoing) && dataOutgoing.length > 0 ? (
-                  currentPageOutgoingData?.map((dataItem, index) => (
-                    <div
-                      key={dataItem.id}
-                      className={`py-4 px-3 flex flex-row justify-between items-center ${
-                        index % 2 === 0 ? "bg-slate-50" : ""
-                      }`}
-                    >
-                      <div className="w-[60vh] justify-center">
-                        <div className="flex flex-row gap-5">
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Last name
-                            </span>
-                            <span>{dataItem.last_name}</span>
+              </TabPanel>
+              <TabPanel className="!px-0 !pt-0">
+                <TableContainer height="408px">
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th width="568px">
+                          <div className="flex justify-center text-slate-600">
+                            Names
                           </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              First name
-                            </span>
-                            <span>{dataItem.first_name}</span>
+                        </Th>
+                        <Th width="197px">
+                          <div className="flex justify-center text-slate-600">
+                            Documents
                           </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Middle name
-                            </span>
-                            <span>{dataItem.middle_name}</span>
+                        </Th>
+                        <Th width="346px">
+                          <div className="flex justify-center text-slate-600">
+                            Actions
                           </div>
-                        </div>
-                      </div>
-
-                      <div className="w-[30vh] flex justify-center">
-                        <span>{dataItem.document}</span>
-                      </div>
-                      <div className="flex flex-row gap-5 w-[38vh] justify-center">
-                        <button
-                          onClick={() => {
-                            setSelectedDataID(dataItem.id);
-                            setSelectedDatas(dataItem);
-                            openModalAlert4();
-                          }}
-                          className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
-                        >
-                          RELEASE
-                        </button>
-                        <button
-                          onClick={() => generateWordDocument(dataItem)}
-                          className="rounded-xl py-1 px-3 text-slate-50 bg-blue-500 hover:bg-blue-600"
-                        >
-                          GENERATE
-                        </button>
-
-                        <Tooltip label="Delete" aria-label="A tooltip">
-                          <button
-                            className="w-[17px]"
-                            onClick={() => {
-                              setSelectedDataID(dataItem.id);
-                              setDeleting("outgoing");
-                              openModalAlert2();
-                            }}
+                        </Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {loadingOutgoing ? (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center">
+                              <LoaderRing />
+                            </div>
+                          </Td>
+                        </Tr>
+                      ) : Array.isArray(dataOutgoing) &&
+                        dataOutgoing.length > 0 ? (
+                        currentPageOutgoingData?.map((dataItem, index) => (
+                          <Tr
+                            key={dataItem.id}
+                            className={`${
+                              index % 2 === 0 ? "bg-slate-50" : ""
+                            } h-[73.19px]`}
                           >
-                            <img
-                              //image-button-size
-                              className="w-[17px]"
-                              src={trashcan}
-                              alt={"trashcan"}
-                            />
-                          </button>
-                        </Tooltip>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    No Result
-                  </div>
-                )}
-              </div>
+                            <Td className="h-[73.19px]">
+                              <div className="justify-center">
+                                <div className="flex flex-row gap-3">
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Last name
+                                    </span>
+                                    <span>{dataItem.last_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      First name
+                                    </span>
+                                    <span>{dataItem.first_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Middle name
+                                    </span>
+                                    <span>{dataItem.middle_name}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]">
+                              <div className="flex justify-center">
+                                <span>{dataItem.document}</span>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]">
+                              <div className="flex flex-row gap-3 justify-center">
+                                <button
+                                  onClick={() => {
+                                    console.log(
+                                      "outgoing dataitem: ",
+                                      dataItem
+                                    );
+                                    setSelectedDataID(dataItem.id);
+                                    setSelectedDatas(dataItem);
+                                    getPublicUrl(dataItem);
+                                    onOpen();
+                                  }}
+                                  className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedDataID(dataItem.id);
+                                    setSelectedDatas(dataItem);
+                                    openModalAlert4();
+                                  }}
+                                  className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
+                                >
+                                  Release
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    switch (dataItem.document) {
+                                      case "Barangay Indigency":
+                                        generateWordDocumentIndigency(dataItem);
+                                        break;
 
-              {/* Pagination Controls */}
-              <div className="flex justify-center mt-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="px-3 py-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            </TabPanel>
-            <TabPanel className="!px-0 !pt-0">
-              <div className="flex flex-row justify-between m-4">
-                <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
-                  Names
+                                      default:
+                                        break;
+                                    }
+                                  }}
+                                  className="rounded-xl py-1 px-3 text-slate-50 bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                                >
+                                  Generate
+                                </button>
+
+                                <Tooltip label="Delete" aria-label="A tooltip">
+                                  <button
+                                    className="w-[17px]"
+                                    onClick={() => {
+                                      setSelectedDataID(dataItem.id);
+                                      setDeleting("outgoing");
+                                      openModalAlert2();
+                                    }}
+                                  >
+                                    <img
+                                      //image-button-size
+                                      className="w-[17px]"
+                                      src={trashcan}
+                                      alt={"trashcan"}
+                                    />
+                                  </button>
+                                </Tooltip>
+                              </div>
+                            </Td>
+                          </Tr>
+                        ))
+                      ) : (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center text-[16px] text-gray-400">
+                              No Result
+                            </div>
+                          </Td>
+                        </Tr>
+                      )}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+                {/* Pagination Controls */}
+                <div className="flex mt-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 mx-1 border rounded disabled:opacity-50 ${
+                      currentPage === 1 ? `` : `hover:bg-slate-100 `
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <span className="px-3 py-2">
+                    Page {currentPage} of {totalPagesOutgoing}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(prev + 1, totalPagesOutgoing)
+                      )
+                    }
+                    disabled={currentPage === totalPagesOutgoing}
+                    className={`px-3 py-2 mx-1 border rounded disabled:opacity-50 ${
+                      currentPage === totalPagesOutgoing
+                        ? ``
+                        : `hover:bg-slate-100 `
+                    }`}
+                  >
+                    Next
+                  </button>
                 </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
-                  Documents
+              </TabPanel>
+              <TabPanel className="!px-0 !pt-0">
+                <TableContainer height="408px">
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th width="568px">
+                          <div className="flex justify-center text-slate-600">
+                            Names
+                          </div>
+                        </Th>
+                        <Th width="197px">
+                          <div className="flex justify-center text-slate-600">
+                            Documents
+                          </div>
+                        </Th>
+                        <Th width="346px">
+                          <div className="flex justify-center text-slate-600">
+                            Date released
+                          </div>
+                        </Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {loadingReleased ? (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center">
+                              <LoaderRing />
+                            </div>
+                          </Td>
+                        </Tr>
+                      ) : Array.isArray(dataReleased) &&
+                        dataReleased.length > 0 ? (
+                        currentPageReleasedData?.map((dataItem, index) => (
+                          <Tr
+                            key={dataItem.id}
+                            className={`${
+                              index % 2 === 0 ? "bg-slate-50" : ""
+                            } h-[73.19px]`}
+                          >
+                            <Td className="h-[73.19px]">
+                              <div className="justify-center">
+                                <div className="flex flex-row gap-3">
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Last name
+                                    </span>
+                                    <span>{dataItem.last_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      First name
+                                    </span>
+                                    <span>{dataItem.first_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Middle name
+                                    </span>
+                                    <span>{dataItem.middle_name}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]">
+                              <div className="flex justify-center">
+                                <span>{dataItem.document}</span>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]">
+                              <div className="flex flex-row gap-3 justify-center">
+                                <span>
+                                  {new Date(
+                                    dataItem?.released_date
+                                  ).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </Td>
+                          </Tr>
+                        ))
+                      ) : (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center text-[16px] text-gray-400">
+                              No Result
+                            </div>
+                          </Td>
+                        </Tr>
+                      )}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+
+                {/* Pagination Controls */}
+                <div className="flex mt-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 mx-1 border rounded disabled:opacity-50 ${
+                      currentPage === 1 ? `` : `hover:bg-slate-100 `
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <span className="px-3 py-2">
+                    Page {currentPage} of {totalPagesReleased}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(prev + 1, totalPagesReleased)
+                      )
+                    }
+                    disabled={currentPage === totalPagesReleased}
+                    className={`px-3 py-2 mx-1 border rounded disabled:opacity-50 ${
+                      currentPage === totalPagesIncoming
+                        ? ``
+                        : `hover:bg-slate-100 `
+                    }`}
+                  >
+                    Next
+                  </button>
                 </div>
-                <span className="text-gray-400">|</span>
-                <div className="flex justify-center text-[18px] w-[38vh] text-slate-600">
-                  Released Date
-                </div>
-              </div>
-
-              <div className="h-[366px] max-h-[366px]">
-                {loadingReleased ? (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    <LoaderRing />
-                  </div>
-                ) : Array.isArray(dataReleased) && dataReleased.length > 0 ? (
-                  currentPageReleasedData?.map((dataItem, index) => (
-                    <div
-                      key={dataItem.id}
-                      className={`py-4 px-3 flex flex-row justify-between items-center ${
-                        index % 2 === 0 ? "bg-slate-50" : ""
-                      }`}
-                    >
-                      <div className="w-[60vh] justify-center">
-                        <div className="flex flex-row gap-5">
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Last name
-                            </span>
-                            <span>{dataItem.last_name}</span>
-                          </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              First name
-                            </span>
-                            <span>{dataItem.first_name}</span>
-                          </div>
-                          <div className="flex flex-col w-fit">
-                            <span className="text-[12px] text-gray-400">
-                              Middle name
-                            </span>
-                            <span>{dataItem.middle_name}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="w-[30vh] flex justify-center">
-                        <span>{dataItem.document}</span>
-                      </div>
-                      <div className="flex flex-row gap-5 w-[38vh] justify-center">
-                        <span>
-                          {new Date(
-                            dataItem.released_date
-                          ).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                    No Result
-                  </div>
-                )}
-              </div>
-
-              {/* Pagination Controls */}
-              <div className="flex justify-center mt-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="px-3 py-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-2 mx-1 border rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
+              </TabPanel>
+              <NotificationBar ref={notificationBarRef} />
+            </TabPanels>
+          </Tabs>
+        </div>
       </div>
+      <Footer />
 
       {/* INCOMING MODALS */}
       {/* view the details of data alert */}
@@ -1538,9 +2221,25 @@ const AdminDashboard: React.FC = () => {
           <ModalBody pb={6} pt={0}>
             {selectedDataID !== null
               ? (() => {
-                  const selectedData = dataIncoming?.find(
-                    (dataInModal) => dataInModal.id === selectedDataID
-                  );
+                  let selectedData = null;
+                  switch (activeTab) {
+                    case 0:
+                      selectedData = dataIncoming?.find(
+                        (dataInModal) => dataInModal.id === selectedDataID
+                      );
+                      break;
+                    case 1:
+                      console.log("trigger dataOutgoing", dataOutgoing);
+                      console.log("trigger dataOutgoing", selectedDataID);
+
+                      selectedData = dataOutgoing?.find(
+                        (dataInModal) => dataInModal.id === selectedDataID
+                      );
+                      console.log("trigger dataOutgoing", selectedData);
+                      break;
+                    default:
+                      break;
+                  }
 
                   return (
                     <form onSubmit={handleSubmit}>
@@ -1845,6 +2544,68 @@ const AdminDashboard: React.FC = () => {
                                 className={`hidden p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 `}
                               />
                             </div>
+                            <div className="sm:col-span-6">
+                              <label
+                                htmlFor="city"
+                                className="block text-sm font-medium leading-6 text-gray-900"
+                              >
+                                Front ID
+                              </label>
+                              {loadingImageUrl ? (
+                                <div className="flex items-center justify-center min-h-[297px]">
+                                  <LoaderRing />
+                                </div>
+                              ) : (
+                                <div className="min-h-[297px] cursor-pointer flex items-center justify-center border rounded-lg">
+                                  {frontIDUrl ? (
+                                    <Image
+                                      src={frontIDUrl ? frontIDUrl : "loading"}
+                                      onClick={() => {
+                                        window.open(
+                                          frontIDUrl ? frontIDUrl : "",
+                                          "_blank"
+                                        );
+                                      }}
+                                      alt="Front image preview"
+                                      className="rounded-lg shadow-md my-1"
+                                    />
+                                  ) : (
+                                    "No data"
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="sm:col-span-6">
+                              <label
+                                htmlFor="city"
+                                className="block text-sm font-medium leading-6 text-gray-900"
+                              >
+                                Back ID
+                              </label>
+                              {loadingImageUrl ? (
+                                <div className="flex items-center justify-center min-h-[297px]">
+                                  <LoaderRing />
+                                </div>
+                              ) : (
+                                <div className="min-h-[297px] cursor-pointer flex items-center justify-center border rounded-lg">
+                                  {backIDUrl ? (
+                                    <Image
+                                      src={backIDUrl ? backIDUrl : "Loading"}
+                                      onClick={() => {
+                                        window.open(
+                                          backIDUrl ? backIDUrl : "",
+                                          "_blank"
+                                        );
+                                      }}
+                                      alt="Back image preview"
+                                      className="rounded-lg shadow-md my-1"
+                                    />
+                                  ) : (
+                                    "No data"
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1873,7 +2634,7 @@ const AdminDashboard: React.FC = () => {
                             // setSelectedDatas(selectedDatas);
                             openModalAlert3();
                           }}
-                          className="px-4 py-2 text-slate-100 bg-blue-500 hover:bg-blue-600 text-gray-700 rounded-xl transition-colors duration-300 w-fit cursor-pointer font-semibold"
+                          className="px-4 py-2 text-slate-100 bg-indigo-600 hover:bg-indigo-500 text-gray-700 rounded-xl transition-colors duration-300 w-fit cursor-pointer font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                         >
                           {/* Send */}
                           {loading ? "Sending" : "Send"}
@@ -1957,7 +2718,7 @@ const AdminDashboard: React.FC = () => {
           <ModalFooter className="gap-x-4">
             <button
               onClick={closeModalAlert1}
-              className="text-sm font-semibold bg-blue-500 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-blue-600"
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               Confirm
             </button>
@@ -2004,7 +2765,7 @@ const AdminDashboard: React.FC = () => {
                   },
                 });
               }}
-              className="text-sm font-semibold bg-blue-500 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-blue-600"
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               {loadingDeleteIncoming ? "Deleting" : "Confirm"}
             </button>
@@ -2053,7 +2814,7 @@ const AdminDashboard: React.FC = () => {
 
                 handleOutgoingClick();
               }}
-              className="text-sm font-semibold bg-blue-500 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-blue-600"
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               {loadingSendToOutgoing ? "Sending" : "Confirm"}
             </button>
@@ -2102,7 +2863,7 @@ const AdminDashboard: React.FC = () => {
 
                 handleOutgoingClick();
               }}
-              className="text-sm font-semibold bg-blue-500 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-blue-600"
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               {loadingSendToReleased ? "Sending" : "Confirm"}
             </button>

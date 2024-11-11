@@ -10,6 +10,8 @@ import FillUpIndigency from "./components/FillUpIndigency";
 import FillUpSedula from "./components/FillUpSedula";
 import FillUpBarangayClearance from "./components/FillUpBarangayClearance";
 import AdminDashboard from "./components/AdminDashBoard";
+import ChangePassword from "./components/ChangePassword";
+import EmailForChangePassword from "./components/EmailForChangePassword";
 
 function App() {
   return (
@@ -27,8 +29,13 @@ function App() {
           <Route
             path="/Barangay Clearance"
             element={<FillUpBarangayClearance />}
-          />{" "}
+          />
           <Route path="/Admin Dashboard" element={<AdminDashboard />} />
+          <Route path="/reset-password" element={<ChangePassword />} />
+          {/* <Route
+            path="/email-reset-password"
+            element={<EmailForChangePassword />}
+          /> */}
         </Routes>
       </Router>
     </ChakraProvider>
