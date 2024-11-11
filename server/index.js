@@ -8,10 +8,11 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 config();
-
+const supabaseUrlWss = process.env.SUPABASE_URL_WSS;
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
+console.log("supabaseUrlWss", supabaseUrlWss);
 
 const app = express();
 const port = process.env.PORT;
@@ -35,6 +36,11 @@ app.use(
       // Disallow inline JavaScript and only allow scripts from 'self' and trusted CDNs
       objectSrc: ["'none'"],
       upgradeInsecureRequests: [],
+      connectSrc: [
+        "'self'",
+        supabaseUrl, // For HTTPS requests
+        supabaseUrlWss, // For WebSocket connections
+      ],
     },
   })
 );
