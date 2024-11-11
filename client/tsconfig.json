@@ -6,6 +6,12 @@
     "paths": {
       "@/*": ["./*"]
     },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@heroicons",
+      "./node_modules/@xlsx",
+      "./node_modules/@types/react-google-recaptcha"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -20,5 +26,5 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "setupTests.ts"]
+  "include": ["src", "setupTests.ts", "src/assets/env.js", "src/Theme.tsx"]
 }
