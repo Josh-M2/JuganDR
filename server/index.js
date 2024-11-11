@@ -4,11 +4,11 @@ import cors from "cors";
 import { config } from "dotenv";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
-import multer from "multer";
-import path from "path";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 config();
-const upload = multer();
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -24,6 +24,20 @@ app.use(
 );
 app.use(bodyParser.json());
 app.use(cookieParser());
+
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://trusted.cdn.com"],
+      styleSrc: ["'self'", "https://trusted.cdn.com"],
+      imgSrc: ["'self'", "https://images.example.com"],
+      // Disallow inline JavaScript and only allow scripts from 'self' and trusted CDNs
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  })
+);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
@@ -46,6 +60,7 @@ app.get("/get-images", async (req, res) => {
   const { front_id, back_id } = req.query.selectedDatas;
   const accessToken = req.cookies.accessToken;
   console.log(front_id, back_id);
+  console.log("req.query.selectedDatas", req.query.selectedDatas);
 
   if (!accessToken) {
     return res.status(401).json({ error: "Access token not found" });
@@ -95,7 +110,15 @@ app.get("/get-images", async (req, res) => {
   return res.send({ frontId, backId });
 });
 
-app.post("/incoming_request", async (req, res) => {
+const incoming_requestRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100,
+  message: {
+    errorAttempt: "Too many requests from this IP, please try again later.",
+  },
+});
+
+app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
   console.log("incoming request", req.body);
 
   const {
@@ -114,8 +137,46 @@ app.post("/incoming_request", async (req, res) => {
     backID,
   } = req.body;
 
-  console.log("frontID", frontID);
-  console.log("backID", backID);
+  const namePattern = /^[a-zA-Z\s]+$/; // only letters and spaces
+  const alphanumericPattern = /^[a-zA-Z0-9\s]+$/; // alphanumeric with spaces
+  const numberPattern = /^\d+$/; // digits only
+  const phonePattern = /^\d{10,15}$/; // digits, 10-15 length
+
+  // Initialize an errors object to collect errors
+  let errors = {};
+
+  // Validate each field
+  if (!namePattern.test(first_name))
+    errors.first_name = "Invalid first name format";
+  if (!namePattern.test(middle_name))
+    errors.middle_name = "Invalid middle name format";
+  if (!namePattern.test(last_name))
+    errors.last_name = "Invalid last name format";
+  if (ext_name && !namePattern.test(ext_name))
+    errors.ext_name = "Invalid extension name format";
+
+  if (!numberPattern.test(age) || age < 1 || age > 120)
+    errors.age = "Age must be a valid number between 1 and 120";
+
+  if (!phonePattern.test(mobile_num))
+    errors.mobile_num = "Mobile number must be 10-15 digits";
+
+  if (!alphanumericPattern.test(street))
+    errors.street = "Invalid street format";
+  if (!alphanumericPattern.test(barangay))
+    errors.barangay = "Invalid barangay format";
+  if (!alphanumericPattern.test(province))
+    errors.province = "Invalid province format";
+  if (!alphanumericPattern.test(city)) errors.city = "Invalid city format";
+
+  // Validate frontID and backID (if they are files, you might check if they were uploaded)
+  if (!frontID) errors.frontID = "Front ID is required";
+  if (!backID) errors.backID = "Back ID is required";
+
+  // Check if there are any errors
+  if (Object.keys(errors).length > 0) {
+    return res.status(400).json({ error: errors });
+  }
 
   const { data, error } = await supabase.from(`incoming`).insert({
     first_name,
@@ -140,34 +201,35 @@ app.post("/incoming_request", async (req, res) => {
 
   return res.send("Data Saved");
 });
-app.post("/save-image", upload.single("file"), async (req, res) => {
-  console.log("save-image:", req.body);
-  const path = req.body.path;
-  const file = req.file; // Get the file from req.file instead of req.body
-  console.log("Received file:", req.file);
 
-  try {
-    const { data, error } = await supabase.storage
-      .from("uploads")
-      .upload(path, file, {
-        contentType: file.mimetype, // Set the correct MIME type from the file
-        cacheControl: "3600", // Optional: Cache control for the uploaded file
-        upsert: false, // Prevent overwriting existing files
-      }); // Use file.buffer for binary data
+// app.post("/save-image", upload.single("file"), async (req, res) => {
+//   console.log("save-image:", req.body);
+//   const path = req.body.path;
+//   const file = req.file; // Get the file from req.file instead of req.body
+//   console.log("Received file:", req.file);
 
-    if (error) {
-      console.error("error saving image", error);
-      return res.status(500).send("Error saving image");
-    }
-    if (data) {
-      console.log("image saved");
-      return res.status(200).json(data);
-    }
-  } catch (error) {
-    console.error("internal save-image error: ", error);
-    return res.status(500).send("Internal server error");
-  }
-});
+//   try {
+//     const { data, error } = await supabase.storage
+//       .from("uploads")
+//       .upload(path, file, {
+//         contentType: file.mimetype, // Set the correct MIME type from the file
+//         cacheControl: "3600", // Optional: Cache control for the uploaded file
+//         upsert: false, // Prevent overwriting existing files
+//       }); // Use file.buffer for binary data
+
+//     if (error) {
+//       console.error("error saving image", error);
+//       return res.status(500).send("Error saving image");
+//     }
+//     if (data) {
+//       console.log("image saved");
+//       return res.status(200).json(data);
+//     }
+//   } catch (error) {
+//     console.error("internal save-image error: ", error);
+//     return res.status(500).send("Internal server error");
+//   }
+// });
 
 app.post("/deletefromincoming", async (req, res) => {
   console.log("incoming delete id", req.body);
@@ -243,6 +305,30 @@ app.post("/sendtoreleased", async (req, res) => {
       },
     },
   });
+
+  const { data: FrontDeleteImage, error: errorFrontDeleteImage } =
+    await supabaseForAuthenticated.storage
+      .from("uploads")
+      .remove(req.body.front_id);
+
+  if (errorFrontDeleteImage) {
+    console.error("Error deleting front_id file:", error.errorFrontDeleteImage);
+    return res.send(
+      "Error deleting front_id file:" + JSON.stringify(errorFrontDeleteImage)
+    );
+  }
+
+  const { data: BackDeleteImage, error: errorBackDeleteImage } =
+    await supabaseForAuthenticated.storage
+      .from("uploads")
+      .remove(req.body.back_id);
+
+  if (errorBackDeleteImage) {
+    console.error("Error deleting back_id file:", error.errorBackDeleteImage);
+    return res.send(
+      "Error deleting back_id file:" + JSON.stringify(errorBackDeleteImage)
+    );
+  }
 
   const { data, error } = await supabaseForAuthenticated
     .from(`released`)
@@ -415,7 +501,17 @@ app.post("/updatedata", async (req, res) => {
   }
 });
 
-app.post("/login", async (req, res) => {
+const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login attempts per windowMs
+  message: {
+    errorAttempt:
+      "Too many login attempts from this IP, please try again after 15 minutes.",
+  },
+});
+
+app.post("/login", loginRateLimiter, async (req, res) => {
+  const isProduction = process.env.DEVELOPMENT === "PRODUCTION";
   const { email, password } = req.body;
   console.log(req.body);
 
@@ -436,7 +532,7 @@ app.post("/login", async (req, res) => {
     //!!IMPORTANT
     res.cookie("accessToken", token, {
       httpOnly: true,
-      secure: false, // Set to true in production (for HTTPS)
+      secure: isProduction, // Set to true in production (for HTTPS)
       sameSite: "Strict",
       maxAge: 32400000,
     });

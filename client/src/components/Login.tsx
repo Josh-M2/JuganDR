@@ -26,7 +26,9 @@ const Login: React.FC = () => {
       navigate("/Admin Dashboard");
     }
   }, []);
-
+  const countdownDuration = 15 * 60;
+  const [timeRemaining, setTimeRemaining] = useState<number>(countdownDuration);
+  const [isCountingDown, setIsCountingDown] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -107,7 +109,7 @@ const Login: React.FC = () => {
             { withCredentials: true }
           );
           if (response) {
-            console.log(response);
+            console.log("login", response);
 
             localStorage.setItem("isAuthenticated", "true");
             localStorage.setItem("Email", response.data.user.email);
@@ -116,6 +118,20 @@ const Login: React.FC = () => {
           setErrorsMain({
             message: error.response?.data?.error,
           });
+
+          if (error.response?.data?.errorAttempt) {
+            setErrorsMain({
+              message: error.response?.data?.errorAttempt,
+            });
+            setTimeRemaining(countdownDuration);
+            setIsCountingDown(true);
+            const endTime = Date.now() + countdownDuration * 1000;
+            localStorage.setItem("countdownEndTime", endTime.toString());
+            localStorage.setItem(
+              "errorMain",
+              error.response?.data?.errorAttempt
+            );
+          }
           setLoading(false);
           // throw new Error(error.response?.data?.error || "Login failed");
           return;
@@ -164,6 +180,40 @@ const Login: React.FC = () => {
     }
   }, [form.email, form.password]);
 
+  useEffect(() => {
+    if (isCountingDown && timeRemaining > 0) {
+      const timer = setInterval(() => {
+        setTimeRemaining((prevTime) => prevTime - 1);
+      }, 1000);
+
+      return () => clearInterval(timer);
+    } else if (timeRemaining <= 0) {
+      setIsCountingDown(false);
+      setErrorsMain({ message: "" });
+      localStorage.removeItem("countdownEndTime");
+      localStorage.removeItem("errorMain");
+    }
+  }, [isCountingDown, timeRemaining]);
+
+  const minutes = Math.floor(timeRemaining / 60);
+  const seconds = timeRemaining % 60;
+
+  useEffect(() => {
+    const savedEndTime = localStorage.getItem("countdownEndTime");
+    const savedErrorMain = localStorage.getItem("errorMain") || "";
+    if (savedEndTime) {
+      const timeLeft = Math.floor((Number(savedEndTime) - Date.now()) / 1000);
+      if (timeLeft > 0) {
+        setTimeRemaining(timeLeft);
+        setErrorsMain({ message: savedErrorMain });
+        setIsCountingDown(true);
+      } else {
+        localStorage.removeItem("countdownEndTime");
+        localStorage.removeItem("errorMain");
+      }
+    }
+  }, []);
+
   return (
     <>
       <div className="h-dvh">
@@ -186,6 +236,12 @@ const Login: React.FC = () => {
                   <ErrorImage />
                   {errorsMain.message}
                 </label>
+              )}
+              {isCountingDown && (
+                <div className="text-[rgb(218,44,44)] text-[13px] mt-[5px] flex items-center">
+                  Countdown: {minutes}:{seconds < 10 ? "0" : ""}
+                  {seconds}
+                </div>
               )}
               <div>
                 <label
@@ -271,7 +327,7 @@ const Login: React.FC = () => {
               <div className="mt-3">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || isCountingDown}
                   className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {loading ? <LoaderRing /> : "Sign in"}

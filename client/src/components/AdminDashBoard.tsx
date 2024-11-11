@@ -20,7 +20,18 @@ import {
   Select,
   Tooltip,
   Image,
+  Table,
+  TableContainer,
+  TableCaption,
+  Thead,
+  Tr,
+  Th,
+  Td,
+  Tbody,
+  Tfoot,
+  Center,
 } from "@chakra-ui/react";
+
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../AdminDashboard.css";
@@ -173,33 +184,48 @@ const AdminDashboard: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [nameSearch, setNameSearch] = useState("");
   const [activeTab, setActiveTab] = useState(0);
+  useEffect(() => {
+    console.log(activeTab);
+  }, [activeTab]);
   const [deleting, setDeleting] = useState("");
   const notificationBarRef = useRef<any>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
 
-  const [form, setForm] = useState<IndigencyForm>(() => {
-    console.log("selectedDataID", selectedDataID);
-    const selectedData = dataIncoming?.find(
-      (dataInModal) => dataInModal.id === selectedDataID
-    );
-
-    return {
-      document: selectedData ? selectedData.document : "",
-      first_name: selectedData ? selectedData.first_name : "",
-      middle_name: selectedData ? selectedData.middle_name : "",
-      last_name: selectedData ? selectedData.last_name : "",
-      ext_name: selectedData ? selectedData.ext_name : "",
-      age: selectedData ? selectedData.age : "",
-      mobile_num: selectedData ? selectedData.mobile_num : "",
-      street: selectedData ? selectedData.street : "",
-      barangay: selectedData ? selectedData.barangay : "",
-      province: selectedData ? selectedData.province : "",
-      city: selectedData ? selectedData.city : "",
-      frontID: selectedData ? selectedData.front_id : "",
-      backID: selectedData ? selectedData.front_id : "",
-    };
+  const [form, setForm] = useState<IndigencyForm>({
+    document: "",
+    first_name: "",
+    middle_name: "",
+    last_name: "",
+    ext_name: "",
+    age: "",
+    mobile_num: "",
+    street: "",
+    barangay: "",
+    province: "",
+    city: "",
+    frontID: "",
+    backID: "",
   });
+
+  useEffect(() => {
+    if (selectedDatas)
+      setForm({
+        document: selectedDatas.document,
+        first_name: selectedDatas.first_name,
+        middle_name: selectedDatas.middle_name,
+        last_name: selectedDatas.last_name,
+        ext_name: selectedDatas.ext_name,
+        age: selectedDatas.age,
+        mobile_num: selectedDatas.mobile_num,
+        street: selectedDatas.street,
+        barangay: selectedDatas.barangay,
+        province: selectedDatas.province,
+        city: selectedDatas.city,
+        frontID: selectedDatas.front_id,
+        backID: selectedDatas.back_id,
+      });
+  }, [selectedDatas]);
 
   const triggerNotification = () => {
     if (notificationBarRef.current) {
@@ -1710,110 +1736,132 @@ const AdminDashboard: React.FC = () => {
             </TabList>
             <TabPanels>
               <TabPanel className="!px-0 !pt-0">
-                <div className="flex flex-row justify-between m-4">
-                  <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
-                    Names
-                  </div>
-                  <span className="text-gray-400">|</span>
-                  <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
-                    Documents
-                  </div>
-                  <span className="text-gray-400">|</span>
-                  <div className="flex justify-center text-[18px] w-[325px] text-slate-600">
-                    Actions
-                  </div>
-                </div>
-
-                <div className="h-[366px] max-h-[366px]">
-                  {loadingIncoming ? (
-                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                      <LoaderRing />
-                    </div>
-                  ) : Array.isArray(dataIncoming) && dataIncoming.length > 0 ? (
-                    currentPageIncomingData?.map((dataItem, index) => (
-                      <div
-                        key={dataItem.id}
-                        className={`py-4 px-3 flex flex-row justify-between items-center ${
-                          index % 2 === 0 ? "bg-slate-50" : ""
-                        }`}
-                      >
-                        <div className="w-[60vh] justify-center">
-                          <div className="flex flex-row gap-5">
-                            <div className="flex flex-col w-fit">
-                              <span className="text-[12px] text-gray-400">
-                                Last name
-                              </span>
-                              <span>{dataItem.last_name}</span>
-                            </div>
-                            <div className="flex flex-col w-fit">
-                              <span className="text-[12px] text-gray-400">
-                                First name
-                              </span>
-                              <span>{dataItem.first_name}</span>
-                            </div>
-                            <div className="flex flex-col w-fit">
-                              <span className="text-[12px] text-gray-400">
-                                Middle name
-                              </span>
-                              <span>{dataItem.middle_name}</span>
-                            </div>
+                <TableContainer height="408px">
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th width="568px">
+                          <div className="flex justify-center text-slate-600">
+                            Names
                           </div>
-                        </div>
-
-                        <div className="w-[30vh] flex justify-center">
-                          <span>{dataItem.document}</span>
-                        </div>
-                        <div className="flex flex-row gap-5 w-[325px] justify-center">
-                          <button
-                            onClick={() => {
-                              setSelectedDataID(dataItem.id);
-                              setSelectedDatas(dataItem);
-                              getPublicUrl(dataItem);
-                              onOpen();
-                            }}
-                            className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
+                        </Th>
+                        <Th width="197px">
+                          <div className="flex justify-center text-slate-600">
+                            Documents
+                          </div>
+                        </Th>
+                        <Th width="346px">
+                          <div className="flex justify-center text-slate-600">
+                            Actions
+                          </div>
+                        </Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {loadingIncoming ? (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center">
+                              <LoaderRing />
+                            </div>
+                          </Td>
+                        </Tr>
+                      ) : // </div>
+                      Array.isArray(dataIncoming) && dataIncoming.length > 0 ? (
+                        currentPageIncomingData?.map((dataItem, index) => (
+                          <Tr
+                            key={dataItem.id}
+                            className={`${
+                              index % 2 === 0 ? "bg-slate-50" : ""
+                            } !h-[73.19px]`}
+                            height="73.19px"
                           >
-                            View
-                          </button>
+                            <Td className="h-[73.19px]" height="73.19px">
+                              <div className="justify-center">
+                                <div className="flex flex-row gap-3">
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Last name
+                                    </span>
+                                    <span>{dataItem.last_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      First name
+                                    </span>
+                                    <span>{dataItem.first_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Middle name
+                                    </span>
+                                    <span>{dataItem.middle_name}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]" height="73.19px">
+                              <div className="flex justify-center">
+                                <span>{dataItem.document}</span>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]" height="73.19px">
+                              <div className="flex flex-row gap-3 justify-center">
+                                <button
+                                  onClick={() => {
+                                    setSelectedDataID(dataItem.id);
+                                    setSelectedDatas(dataItem);
+                                    getPublicUrl(dataItem);
+                                    onOpen();
+                                  }}
+                                  className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
+                                >
+                                  View
+                                </button>
 
-                          <button
-                            onClick={() => {
-                              setSelectedDatas(dataItem);
-                              openModalAlert3();
-                            }}
-                            className="rounded-xl py-1 px-3 text-slate-50 bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                          >
-                            Accept
-                          </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedDatas(dataItem);
+                                    openModalAlert3();
+                                  }}
+                                  className="rounded-xl py-1 px-3 text-slate-50 bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                                >
+                                  Accept
+                                </button>
 
-                          <Tooltip label="Delete" aria-label="A tooltip">
-                            <button
-                              className="w-[17px]"
-                              onClick={() => {
-                                setSelectedDataID(dataItem.id);
-                                setDeleting("incoming");
-                                openModalAlert2();
-                              }}
-                            >
-                              <img
-                                //image-button-size
-                                className="w-[17px]"
-                                src={trashcan}
-                                alt={"trashcan"}
-                              />
-                            </button>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                      No Result
-                    </div>
-                  )}
-                </div>
-
-                {/* Pagination Controls */}
+                                <Tooltip label="Delete" aria-label="A tooltip">
+                                  <button
+                                    className="w-[17px]"
+                                    onClick={() => {
+                                      setSelectedDataID(dataItem.id);
+                                      setDeleting("incoming");
+                                      openModalAlert2();
+                                    }}
+                                  >
+                                    <img
+                                      //image-button-size
+                                      className="w-[17px]"
+                                      src={trashcan}
+                                      alt={"trashcan"}
+                                    />
+                                  </button>
+                                </Tooltip>
+                              </div>
+                            </Td>
+                          </Tr>
+                        ))
+                      ) : (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center text-[16px] text-gray-400">
+                              No Result
+                            </div>
+                          </Td>
+                        </Tr>
+                      )}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
                 <div className="flex mt-2">
                   <button
                     onClick={() =>
@@ -1847,117 +1895,150 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </TabPanel>
               <TabPanel className="!px-0 !pt-0">
-                <div className="flex flex-row justify-between m-4">
-                  <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
-                    Names
-                  </div>
-                  <span className="text-gray-400">|</span>
-                  <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
-                    Documents
-                  </div>
-                  <span className="text-gray-400">|</span>
-                  <div className="flex justify-center text-[18px] w-[325px] text-slate-600">
-                    Actions
-                  </div>
-                </div>
-
-                <div className="h-[366px] max-h-[366px]">
-                  {loadingOutgoing ? (
-                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                      <LoaderRing />
-                    </div>
-                  ) : Array.isArray(dataOutgoing) && dataOutgoing.length > 0 ? (
-                    currentPageOutgoingData?.map((dataItem, index) => (
-                      <div
-                        key={dataItem.id}
-                        className={`py-4 px-3 flex flex-row justify-between items-center ${
-                          index % 2 === 0 ? "bg-slate-50" : ""
-                        }`}
-                      >
-                        <div className="w-[60vh] justify-center">
-                          <div className="flex flex-row gap-5">
-                            <div className="flex flex-col w-fit">
-                              <span className="text-[12px] text-gray-400">
-                                Last name
-                              </span>
-                              <span>{dataItem.last_name}</span>
-                            </div>
-                            <div className="flex flex-col w-fit">
-                              <span className="text-[12px] text-gray-400">
-                                First name
-                              </span>
-                              <span>{dataItem.first_name}</span>
-                            </div>
-                            <div className="flex flex-col w-fit">
-                              <span className="text-[12px] text-gray-400">
-                                Middle name
-                              </span>
-                              <span>{dataItem.middle_name}</span>
-                            </div>
+                <TableContainer height="408px">
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th width="568px">
+                          <div className="flex justify-center text-slate-600">
+                            Names
                           </div>
-                        </div>
-
-                        <div className="w-[30vh] flex justify-center">
-                          <span>{dataItem.document}</span>
-                        </div>
-                        <div className="flex flex-row gap-5 w-[325px] justify-center">
-                          <button
-                            onClick={() => {
-                              setSelectedDataID(dataItem.id);
-                              setSelectedDatas(dataItem);
-                              getPublicUrl(dataItem);
-                              onOpen();
-                            }}
-                            className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
+                        </Th>
+                        <Th width="197px">
+                          <div className="flex justify-center text-slate-600">
+                            Documents
+                          </div>
+                        </Th>
+                        <Th width="346px">
+                          <div className="flex justify-center text-slate-600">
+                            Actions
+                          </div>
+                        </Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {loadingOutgoing ? (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center">
+                              <LoaderRing />
+                            </div>
+                          </Td>
+                        </Tr>
+                      ) : Array.isArray(dataOutgoing) &&
+                        dataOutgoing.length > 0 ? (
+                        currentPageOutgoingData?.map((dataItem, index) => (
+                          <Tr
+                            key={dataItem.id}
+                            className={`${
+                              index % 2 === 0 ? "bg-slate-50" : ""
+                            } h-[73.19px]`}
                           >
-                            View
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedDataID(dataItem.id);
-                              setSelectedDatas(dataItem);
-                              openModalAlert4();
-                            }}
-                            className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
-                          >
-                            Release
-                          </button>
-                          <button
-                            onClick={() =>
-                              generateWordDocumentIndigency(dataItem)
-                            }
-                            className="rounded-xl py-1 px-3 text-slate-50 bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                          >
-                            Generate
-                          </button>
+                            <Td className="h-[73.19px]">
+                              <div className="justify-center">
+                                <div className="flex flex-row gap-3">
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Last name
+                                    </span>
+                                    <span>{dataItem.last_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      First name
+                                    </span>
+                                    <span>{dataItem.first_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Middle name
+                                    </span>
+                                    <span>{dataItem.middle_name}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]">
+                              <div className="flex justify-center">
+                                <span>{dataItem.document}</span>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]">
+                              <div className="flex flex-row gap-3 justify-center">
+                                <button
+                                  onClick={() => {
+                                    console.log(
+                                      "outgoing dataitem: ",
+                                      dataItem
+                                    );
+                                    setSelectedDataID(dataItem.id);
+                                    setSelectedDatas(dataItem);
+                                    getPublicUrl(dataItem);
+                                    onOpen();
+                                  }}
+                                  className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedDataID(dataItem.id);
+                                    setSelectedDatas(dataItem);
+                                    openModalAlert4();
+                                  }}
+                                  className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
+                                >
+                                  Release
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    switch (dataItem.document) {
+                                      case "Barangay Indigency":
+                                        generateWordDocumentIndigency(dataItem);
+                                        break;
 
-                          <Tooltip label="Delete" aria-label="A tooltip">
-                            <button
-                              className="w-[17px]"
-                              onClick={() => {
-                                setSelectedDataID(dataItem.id);
-                                setDeleting("outgoing");
-                                openModalAlert2();
-                              }}
-                            >
-                              <img
-                                //image-button-size
-                                className="w-[17px]"
-                                src={trashcan}
-                                alt={"trashcan"}
-                              />
-                            </button>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                      No Result
-                    </div>
-                  )}
-                </div>
+                                      default:
+                                        break;
+                                    }
+                                  }}
+                                  className="rounded-xl py-1 px-3 text-slate-50 bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                                >
+                                  Generate
+                                </button>
 
+                                <Tooltip label="Delete" aria-label="A tooltip">
+                                  <button
+                                    className="w-[17px]"
+                                    onClick={() => {
+                                      setSelectedDataID(dataItem.id);
+                                      setDeleting("outgoing");
+                                      openModalAlert2();
+                                    }}
+                                  >
+                                    <img
+                                      //image-button-size
+                                      className="w-[17px]"
+                                      src={trashcan}
+                                      alt={"trashcan"}
+                                    />
+                                  </button>
+                                </Tooltip>
+                              </div>
+                            </Td>
+                          </Tr>
+                        ))
+                      ) : (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center text-[16px] text-gray-400">
+                              No Result
+                            </div>
+                          </Td>
+                        </Tr>
+                      )}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
                 {/* Pagination Controls */}
                 <div className="flex mt-2">
                   <button
@@ -1982,7 +2063,7 @@ const AdminDashboard: React.FC = () => {
                     }
                     disabled={currentPage === totalPagesOutgoing}
                     className={`px-3 py-2 mx-1 border rounded disabled:opacity-50 ${
-                      currentPage === totalPagesIncoming
+                      currentPage === totalPagesOutgoing
                         ? ``
                         : `hover:bg-slate-100 `
                     }`}
@@ -1992,74 +2073,97 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </TabPanel>
               <TabPanel className="!px-0 !pt-0">
-                <div className="flex flex-row justify-between m-4">
-                  <div className="flex justify-center text-[18px] w-[60vh] text-slate-600">
-                    Names
-                  </div>
-                  <span className="text-gray-400">|</span>
-                  <div className="flex justify-center text-[18px] w-[30vh] text-slate-600">
-                    Documents
-                  </div>
-                  <span className="text-gray-400">|</span>
-                  <div className="flex justify-center text-[18px] w-[325px] text-slate-600">
-                    Released Date
-                  </div>
-                </div>
-
-                <div className="h-[366px] max-h-[366px]">
-                  {loadingReleased ? (
-                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                      <LoaderRing />
-                    </div>
-                  ) : Array.isArray(dataReleased) && dataReleased.length > 0 ? (
-                    currentPageReleasedData?.map((dataItem, index) => (
-                      <div
-                        key={dataItem.id}
-                        className={`py-4 px-3 flex flex-row justify-between items-center ${
-                          index % 2 === 0 ? "bg-slate-50" : ""
-                        }`}
-                      >
-                        <div className="w-[60vh] justify-center">
-                          <div className="flex flex-row gap-5">
-                            <div className="flex flex-col w-fit">
-                              <span className="text-[12px] text-gray-400">
-                                Last name
-                              </span>
-                              <span>{dataItem.last_name}</span>
-                            </div>
-                            <div className="flex flex-col w-fit">
-                              <span className="text-[12px] text-gray-400">
-                                First name
-                              </span>
-                              <span>{dataItem.first_name}</span>
-                            </div>
-                            <div className="flex flex-col w-fit">
-                              <span className="text-[12px] text-gray-400">
-                                Middle name
-                              </span>
-                              <span>{dataItem.middle_name}</span>
-                            </div>
+                <TableContainer height="408px">
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th width="568px">
+                          <div className="flex justify-center text-slate-600">
+                            Names
                           </div>
-                        </div>
-
-                        <div className="w-[30vh] flex justify-center">
-                          <span>{dataItem.document}</span>
-                        </div>
-                        <div className="flex flex-row gap-5 w-[325px] justify-center">
-                          <span>
-                            {new Date(
-                              dataItem?.released_date
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-row justify-center h-[100%] items-center text-[16px] text-gray-400">
-                      No Result
-                    </div>
-                  )}
-                </div>
+                        </Th>
+                        <Th width="197px">
+                          <div className="flex justify-center text-slate-600">
+                            Documents
+                          </div>
+                        </Th>
+                        <Th width="346px">
+                          <div className="flex justify-center text-slate-600">
+                            Date released
+                          </div>
+                        </Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {loadingReleased ? (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center">
+                              <LoaderRing />
+                            </div>
+                          </Td>
+                        </Tr>
+                      ) : Array.isArray(dataReleased) &&
+                        dataReleased.length > 0 ? (
+                        currentPageReleasedData?.map((dataItem, index) => (
+                          <Tr
+                            key={dataItem.id}
+                            className={`${
+                              index % 2 === 0 ? "bg-slate-50" : ""
+                            } h-[73.19px]`}
+                          >
+                            <Td className="h-[73.19px]">
+                              <div className="justify-center">
+                                <div className="flex flex-row gap-3">
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Last name
+                                    </span>
+                                    <span>{dataItem.last_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      First name
+                                    </span>
+                                    <span>{dataItem.first_name}</span>
+                                  </div>
+                                  <div className="flex flex-col w-fit">
+                                    <span className="text-[12px] text-gray-400">
+                                      Middle name
+                                    </span>
+                                    <span>{dataItem.middle_name}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]">
+                              <div className="flex justify-center">
+                                <span>{dataItem.document}</span>
+                              </div>
+                            </Td>
+                            <Td className="h-[73.19px]">
+                              <div className="flex flex-row gap-3 justify-center">
+                                <span>
+                                  {new Date(
+                                    dataItem?.released_date
+                                  ).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </Td>
+                          </Tr>
+                        ))
+                      ) : (
+                        <Tr height="367px">
+                          <Td colSpan={3} textAlign="center" py={10}>
+                            <div className="flex align-center justify-center text-[16px] text-gray-400">
+                              No Result
+                            </div>
+                          </Td>
+                        </Tr>
+                      )}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
 
                 {/* Pagination Controls */}
                 <div className="flex mt-2">
@@ -2117,9 +2221,25 @@ const AdminDashboard: React.FC = () => {
           <ModalBody pb={6} pt={0}>
             {selectedDataID !== null
               ? (() => {
-                  const selectedData = dataIncoming?.find(
-                    (dataInModal) => dataInModal.id === selectedDataID
-                  );
+                  let selectedData = null;
+                  switch (activeTab) {
+                    case 0:
+                      selectedData = dataIncoming?.find(
+                        (dataInModal) => dataInModal.id === selectedDataID
+                      );
+                      break;
+                    case 1:
+                      console.log("trigger dataOutgoing", dataOutgoing);
+                      console.log("trigger dataOutgoing", selectedDataID);
+
+                      selectedData = dataOutgoing?.find(
+                        (dataInModal) => dataInModal.id === selectedDataID
+                      );
+                      console.log("trigger dataOutgoing", selectedData);
+                      break;
+                    default:
+                      break;
+                  }
 
                   return (
                     <form onSubmit={handleSubmit}>
