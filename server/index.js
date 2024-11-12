@@ -348,6 +348,35 @@ app.post("/sendtoreleased", async (req, res) => {
   return res.send("Data Saved");
 });
 
+app.post("/permanently-delete-released-data", async (req, res) => {
+  const { ids } = req.body;
+  console.log("permanently-delete-released-data-body", ids);
+  const accessToken = req.cookies.accessToken;
+  if (!accessToken) {
+    return res.status(401).json({ error: "Access token not found" });
+  }
+
+  const supabaseForAuthenticated = createClient(supabaseUrl, supabaseKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+
+  const { error } = await supabaseForAuthenticated
+    .from("released")
+    .delete()
+    .in("id", ids);
+
+  if (error) {
+    console.log("error deleting data in released table: ", error);
+    return res.send("error deleting data in released table: ", error);
+  }
+
+  return res.status(200).json({ success: true });
+});
+
 app.post("/deletefromoutgoing", async (req, res) => {
   console.log("outgoing delete id", req.body);
   const accessToken = req.cookies.accessToken;
@@ -475,6 +504,23 @@ app.get("/fetchreleased", async (req, res) => {
 
 app.post("/updatedata", async (req, res) => {
   // console.log(req.cookies.accessToken);
+  const {
+    document,
+    first_name,
+    middle_name,
+    last_name,
+    ext_name,
+    age,
+    mobile_num,
+    street,
+    barangay,
+    province,
+    city,
+    frontID: back_id,
+    backID: front_id,
+    id,
+  } = req.body.formDataWithId;
+  const tablename = req.body.tableName;
   const accessToken = req.cookies.accessToken;
   if (!accessToken) {
     return res.status(401).json({ error: "Access token not found" });
@@ -488,18 +534,36 @@ app.post("/updatedata", async (req, res) => {
     },
   });
 
-  console.log(req.body);
+  console.log("tableyaya", tablename);
+  console.log("tableiD", id);
 
   try {
     const { data: updatedData, error: errorUpdatedData } =
       await supabaseForAuthenticated
-        .from("incoming")
-        .update(req.body)
-        .eq("id", req.body.id);
+        .from(tablename)
+        .update({
+          document,
+          first_name,
+          middle_name,
+          last_name,
+          ext_name,
+          age,
+          mobile_num,
+          street,
+          barangay,
+          province,
+          city,
+          back_id,
+          front_id,
+        })
+        .select("*")
+        .eq("id", id)
+        .single();
     if (errorUpdatedData) {
-      throw new Error(`Incoming update Error: ${errorUpdatedData.message}`);
+      console.error("Incoming update Error:", errorUpdatedData);
+      return res.send(`error updating ${tablename}: ${errorUpdatedData}`);
     }
-
+    if (updatedData) console.log("updatedData", updatedData);
     return res.status(200).json(updatedData);
   } catch (error) {
     console.error("Error update incoming data:", error);
