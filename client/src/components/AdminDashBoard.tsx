@@ -30,6 +30,7 @@ import {
   Tbody,
   Tfoot,
   Center,
+  Checkbox,
 } from "@chakra-ui/react";
 
 import React, { FormEvent, useEffect, useRef, useState } from "react";
@@ -142,10 +143,13 @@ const AdminDashboard: React.FC = () => {
   const finalRef = React.useRef(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isModalOpen1, setIsModalOpen1] = useState(false);
+  const [isModalOpenEdit, setIsModalOpenEdit] = useState(false);
+  const [isModalOpen1, setIsModalOpen1] = useState(false); //logout modal
   const [isModalOpen2, setIsModalOpen2] = useState(false);
   const [isModalOpen3, setIsModalOpen3] = useState(false);
   const [isModalOpen4, setIsModalOpen4] = useState(false);
+  const [isModalOpen5, setIsModalOpen5] = useState(false);
+  const [isModalOpen6, setIsModalOpen6] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingIncoming, setLoadingIncoming] = useState(false);
   const [loadingOutgoing, setLoadingOutgoing] = useState(false);
@@ -153,6 +157,9 @@ const AdminDashboard: React.FC = () => {
   const [loadingDeleteIncoming, setLoadingDeleteIncoming] = useState(false);
   const [loadingSendToOutgoing, setLoadingSendToOutgoing] = useState(false);
   const [loadingSendToReleased, setLoadingSendToReleased] = useState(false);
+  const [loadingDeletePermanently, setLoadingDeletePermanently] =
+    useState(false);
+
   const [frontIDUrl, setFrontIDUrl] = useState<string | null>(null);
   const [backIDUrl, setBackIDUrl] = useState<string | null>(null);
   const [loadingImageUrl, setLoadingImageUrl] = useState(false);
@@ -191,6 +198,9 @@ const AdminDashboard: React.FC = () => {
   const notificationBarRef = useRef<any>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [deletePermanently, setDeletePermanently] = useState(false);
+  const [updateAndSend, setUpdateAndSend] = useState(true);
+  const [updateAndGenerate, setUpdateAndGenerate] = useState(false);
 
   const [form, setForm] = useState<IndigencyForm>({
     document: "",
@@ -245,6 +255,51 @@ const AdminDashboard: React.FC = () => {
     setActiveTab(2);
   };
 
+  const openModalAlertEdit = () => setIsModalOpenEdit(true);
+  const closeModalAlertEdit = () => {
+    setIsModalOpenEdit(false);
+    setToggleEdit(false);
+    const selectedData = dataIncoming?.find(
+      (dataInModal) => dataInModal.id === selectedDataID
+    );
+    if (selectedData) {
+      setForm({
+        document: selectedData.document || "",
+        first_name: selectedData.first_name || "",
+        middle_name: selectedData.middle_name || "",
+        last_name: selectedData.last_name || "",
+        ext_name: selectedData.ext_name || "",
+        age: selectedData.age || "",
+        mobile_num: selectedData.mobile_num || "",
+        street: selectedData.street || "",
+        barangay: selectedData.barangay || "",
+        province: selectedData.province || "",
+        city: selectedData.city || "",
+        frontID: selectedData.front_id || "",
+        backID: selectedData.back_id || "",
+      });
+
+      setError({
+        document: "",
+        first_name: "",
+        middle_name: "",
+        last_name: "",
+        ext_name: "",
+        age: "",
+        mobile_num: "",
+        // purpose: "",
+        // purpose_for: "",
+        // school: "",
+        street: "",
+        province: "",
+        barangay: "",
+        city: "",
+        frontID: "",
+        backID: "",
+      });
+    }
+  };
+
   const openModalAlert = () => setIsModalOpen(true);
   const closeModalAlert = () => setIsModalOpen(false);
 
@@ -280,6 +335,12 @@ const AdminDashboard: React.FC = () => {
 
   const openModalAlert4 = () => setIsModalOpen4(true);
   const closeModalAlert4 = () => setIsModalOpen4(false);
+
+  const openModalAlert5 = () => setIsModalOpen5(true);
+  const closeModalAlert5 = () => setIsModalOpen5(false);
+
+  const openModalAlert6 = () => setIsModalOpen6(true);
+  const closeModalAlert6 = () => setIsModalOpen6(false);
 
   useEffect(() => {
     const selectedData = dataIncoming?.find(
@@ -451,7 +512,7 @@ const AdminDashboard: React.FC = () => {
     const streetError = validatestreet(form.street);
     const provinceError = validateprovince(form.province);
     const barangayError = validatebarangay(form.barangay);
-    const cityError = validatecity(form.barangay);
+    const cityError = validatecity(form.city);
 
     if (
       first_nameError ||
@@ -511,22 +572,49 @@ const AdminDashboard: React.FC = () => {
   const handleSubmit = async (id: any) => {
     setLoading(true);
 
+    // updateAndSend
     const formDataWithId = { ...form, id };
-
+    let tableName;
+    switch (activeTab) {
+      case 0:
+        tableName = "incoming";
+        break;
+      case 1:
+        tableName = "outgoing";
+        break;
+      default:
+        break;
+    }
+    console.log("tableName", tableName);
     try {
-      const response = await axios.post(`${urlEnv}updatedata`, formDataWithId, {
-        withCredentials: true,
-      });
+      const response = await axios.post(
+        `${urlEnv}updatedata`,
+        { formDataWithId, tableName },
+        {
+          withCredentials: true,
+        }
+      );
 
-      console.log("response", response);
-    } catch (error) {
+      if (response.data) {
+        console.log("responsehandleSubmit", response.data);
+        setLoading(false);
+        if (tableName === "incoming" && updateAndSend) {
+          await sendToOutgoing(response.data);
+          handleOutgoingClick();
+        } else if (tableName === "outgoing" && updateAndGenerate) {
+          await generateWordDocumentIndigency(response.data);
+        }
+      }
+    } catch (error: any) {
       console.error("Error Updating form", error);
       // Optionally handle the error, show a message, etc.
+      if (error.response.status === 401) {
+        openModalAlert1();
+      }
     }
 
-    onClose();
+    closeModalAlertEdit();
     closeModalAlert();
-    //fetchIncoming();
     setLoading(false);
   };
 
@@ -1047,7 +1135,7 @@ const AdminDashboard: React.FC = () => {
         console.log("sent to outgoing");
         deleteFromIncoming(data.id);
         closeModalAlert3();
-        onClose();
+        closeModalAlertEdit();
       }
     } catch (err: any) {
       console.error(`error sending to outgoing: ${err.message}`);
@@ -1069,12 +1157,12 @@ const AdminDashboard: React.FC = () => {
         console.log("sent to Released");
         deleteFromOutgoing(data.id);
         closeModalAlert4();
-        onClose();
+        closeModalAlertEdit();
       }
     } catch (err: any) {
       console.error(`error sending to Released: ${err.message}`);
     }
-    setLoadingSendToReleased(true);
+    setLoadingSendToReleased(false);
   };
 
   // const fetchReleased = async () => {
@@ -1561,10 +1649,13 @@ const AdminDashboard: React.FC = () => {
     setLoadingImageUrl(false);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!dataReleased || dataReleased.length <= 0) {
+      openModalAlert6();
       return;
     }
+
+    deletePermanently && setLoadingDeletePermanently(true);
 
     const formattedData = dataReleased.map((item) => {
       const fullName = ` ${toUpperCase(item.first_name)} ${toUpperCase(
@@ -1595,21 +1686,6 @@ const AdminDashboard: React.FC = () => {
         : "Invalid Date",
     }));
 
-    // data = [
-    //   {
-    //     Start_Date:
-    //       typeof startDate === "string"
-    //         ? parseISO(startDate).toDateString()
-    //         : "No data",
-
-    //     End_Date:
-    //       typeof endDate === "string"
-    //         ? parseISO(endDate).toDateString()
-    //         : "No data",
-    //   },
-    //   ...data,
-    // ];
-
     // Convert JSON data to a worksheet
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
@@ -1624,6 +1700,45 @@ const AdminDashboard: React.FC = () => {
         endDate?.toLocaleDateString() || ""
       }${endDate ? " - " : ""}${selectedFilter} document released.xlsx`
     );
+    if (deletePermanently) {
+      const ids = dataReleased.map((item) => {
+        return item.id;
+      });
+      console.log("ids", ids);
+      try {
+        const response = await axios.post(
+          `${urlEnv}permanently-delete-released-data`,
+          { ids },
+          {
+            withCredentials: true,
+          }
+        );
+
+        if (response.data.success) {
+          //open modal
+          console.log(
+            `${selectedFilter} documents ${
+              startDate && endDate
+                ? `from ${startDate.toDateString()} to ${endDate.toDateString()} `
+                : startDate && !endDate
+                ? `from ${startDate.toDateString()} `
+                : endDate && !startDate
+                ? `from ${endDate.toDateString()} backwards `
+                : ""
+            }succesfully deleted from released table`
+          );
+        }
+        setLoadingDeletePermanently(false);
+      } catch (error: any) {
+        console.error("error permantly delete datas in released");
+        if (error.response.status === 401) {
+          console.log("error permantly delete: ", error);
+          setLoadingDeletePermanently(false);
+          openModalAlert1();
+        }
+        setLoadingDeletePermanently(false);
+      }
+    }
   };
 
   return (
@@ -1642,7 +1757,7 @@ const AdminDashboard: React.FC = () => {
             </button>
             {activeTab === 2 ? (
               <button
-                onClick={handleExport}
+                onClick={openModalAlert5}
                 className="rounded-xl py-4 px-6  text-slate-50 bg-indigo-600 hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Export
@@ -1816,7 +1931,7 @@ const AdminDashboard: React.FC = () => {
                                     setSelectedDataID(dataItem.id);
                                     setSelectedDatas(dataItem);
                                     getPublicUrl(dataItem);
-                                    onOpen();
+                                    openModalAlertEdit();
                                   }}
                                   className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
                                 >
@@ -1978,7 +2093,7 @@ const AdminDashboard: React.FC = () => {
                                     setSelectedDataID(dataItem.id);
                                     setSelectedDatas(dataItem);
                                     getPublicUrl(dataItem);
-                                    onOpen();
+                                    openModalAlertEdit();
                                   }}
                                   className="py-1 px-3 border rounded-xl self-center hover:bg-gray-500/20"
                                 >
@@ -2212,16 +2327,17 @@ const AdminDashboard: React.FC = () => {
       {/* INCOMING MODALS */}
       {/* view the details of data alert */}
       <Modal
-        initialFocusRef={initialRef}
-        finalFocusRef={finalRef}
-        isOpen={isOpen}
-        onClose={onClose}
+        onClose={closeModalAlertEdit}
+        isOpen={isModalOpenEdit}
         isCentered
         size="xl"
       >
         <ModalOverlay />
         <ModalContent>
-          <ModalCloseButton className="border !border-transparent " />
+          <ModalCloseButton
+            className="border !border-transparent "
+            onClick={closeModalAlertEdit}
+          />
           <ModalBody pb={6} pt={0}>
             {selectedDataID !== null
               ? (() => {
@@ -2248,11 +2364,11 @@ const AdminDashboard: React.FC = () => {
                   return (
                     <form onSubmit={handleSubmit}>
                       <div className="space-y-12">
-                        <div className="border-b border-gray-900/10 pb-3">
+                        <div className="border-b border-gray-900/10 ">
                           <h2 className="text-base font-semibold leading-10 text-gray-900 mt-4 mb-4">
                             {selectedData?.document}
                           </h2>
-                          <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                          <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 h-[65vh] overflow-auto">
                             <div className="sm:col-span-3">
                               <label
                                 htmlFor="first_name"
@@ -2396,7 +2512,7 @@ const AdminDashboard: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="sm:col-span-4">
+                            <div className="sm:col-span-3">
                               <label
                                 htmlFor="mobile_num"
                                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -2426,7 +2542,7 @@ const AdminDashboard: React.FC = () => {
                               </div>
                             </div>
                             {/* here paste 1 */}
-                            <div className="sm:col-span-2 sm:col-start-1">
+                            <div className="sm:col-span-3 sm:col-start-1">
                               <label
                                 htmlFor="street"
                                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -2455,7 +2571,7 @@ const AdminDashboard: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="sm:col-span-2">
+                            <div className="sm:col-span-3">
                               <label
                                 htmlFor="barangay"
                                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -2484,7 +2600,7 @@ const AdminDashboard: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="sm:col-span-2">
+                            <div className="sm:col-span-3">
                               <label
                                 htmlFor="province"
                                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -2513,7 +2629,7 @@ const AdminDashboard: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="sm:col-span-2">
+                            <div className="sm:col-span-3">
                               <label
                                 htmlFor="city"
                                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -2613,42 +2729,44 @@ const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
                       </div>
-
-                      <ModalFooter className="gap-3 !px-0 !pt-3 !pb-0">
-                        {/* <Button onClick={onClose}>Cancel</Button> */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setToggleEdit(!toggleEdit);
-                            if (toggleEdit) {
-                              const confirm = handleConfirm();
-                              confirm && openModalAlert();
-                            }
-                          }}
-                          // type={toggleEdit ? "submit" : undefined}
-                          className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
-                        >
-                          {toggleEdit ? "Save" : "Edit"}
-                        </button>
-
-                        <button
-                          disabled={loading}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // setSelectedDatas(selectedDatas);
-                            openModalAlert3();
-                          }}
-                          className="px-4 py-2 text-slate-100 bg-indigo-600 hover:bg-indigo-500 text-gray-700 rounded-xl transition-colors duration-300 w-fit cursor-pointer font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                        >
-                          {/* Send */}
-                          {loading ? "Sending" : "Send"}
-                        </button>
-                      </ModalFooter>
                     </form>
                   );
                 })()
               : "No data return"}
           </ModalBody>
+          <ModalFooter className="gap-3" margin={"20px"} padding={0}>
+            {/* <Button onClick={onClose}>Cancel</Button> */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                if (!toggleEdit) {
+                  setToggleEdit(true);
+                }
+
+                if (toggleEdit) {
+                  const confirm = handleConfirm();
+                  confirm && openModalAlert();
+                }
+              }}
+              // type={toggleEdit ? "submit" : undefined}
+              className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
+            >
+              {toggleEdit ? "Save" : "Edit"}
+            </button>
+
+            <button
+              disabled={loading}
+              onClick={(e) => {
+                e.preventDefault();
+                // setSelectedDatas(selectedDatas);
+                openModalAlert3();
+              }}
+              className="px-4 py-2 text-slate-100 bg-indigo-600 hover:bg-indigo-500 text-gray-700 rounded-xl transition-colors duration-300 w-fit cursor-pointer font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              {/* Send */}
+              {loading ? "Sending" : "Send"}
+            </button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 
@@ -2663,7 +2781,35 @@ const AdminDashboard: React.FC = () => {
         >
           <ModalHeader>Review</ModalHeader>
           <ModalCloseButton onClick={closeModalAlert} />
-          <ModalBody>Please ensure the information is correct.</ModalBody>
+          <ModalBody>
+            Please ensure the information is correct.
+            {activeTab === 0 ? (
+              <Checkbox
+                name="updateandaccept"
+                colorScheme="green"
+                className="mt-5"
+                isChecked={updateAndSend}
+                onChange={() => {
+                  setUpdateAndSend(!updateAndSend);
+                }}
+              >
+                Update and accept this request
+              </Checkbox>
+            ) : (
+              <Checkbox
+                name="updateandgenerate"
+                colorScheme="green"
+                className="mt-5"
+                isChecked={updateAndGenerate}
+                onChange={() => {
+                  setUpdateAndGenerate(!updateAndGenerate);
+                }}
+              >
+                Update and generate this request
+              </Checkbox>
+            )}
+          </ModalBody>
+
           <ModalFooter className="gap-x-4">
             <button
               type="button"
@@ -2671,7 +2817,7 @@ const AdminDashboard: React.FC = () => {
                 closeModalAlert();
                 setToggleEdit(true);
               }}
-              className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
+              className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
             >
               Review
             </button>
@@ -2698,10 +2844,12 @@ const AdminDashboard: React.FC = () => {
 
                 // Optionally close modal after submitting
                 // closeModal();
+                setToggleEdit(false);
               }}
-              className="text-sm font-semibold leading-6 text-gray-900 py-2 px-4 rounded"
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              disabled={loading}
             >
-              Update
+              {loading ? "Updating" : "Update"}
             </button>
           </ModalFooter>
         </ModalContent>
@@ -2743,7 +2891,11 @@ const AdminDashboard: React.FC = () => {
           <ModalCloseButton onClick={closeModalAlert2} />
           <ModalBody>This will delete the data.</ModalBody>
           <ModalFooter className="gap-x-4">
-            <button className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer">
+            <button
+              className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
+              onClick={closeModalAlert2}
+              disabled={loadingDeleteIncoming}
+            >
               Cancel
             </button>
             <button
@@ -2770,6 +2922,7 @@ const AdminDashboard: React.FC = () => {
                 });
               }}
               className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              disabled={loadingDeleteIncoming}
             >
               {loadingDeleteIncoming ? "Deleting" : "Confirm"}
             </button>
@@ -2793,6 +2946,7 @@ const AdminDashboard: React.FC = () => {
             <button
               className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
               onClick={closeModalAlert3}
+              disabled={loadingSendToOutgoing}
             >
               Cancel
             </button>
@@ -2819,6 +2973,7 @@ const AdminDashboard: React.FC = () => {
                 handleOutgoingClick();
               }}
               className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              disabled={loadingSendToOutgoing}
             >
               {loadingSendToOutgoing ? "Sending" : "Confirm"}
             </button>
@@ -2842,6 +2997,7 @@ const AdminDashboard: React.FC = () => {
             <button
               className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
               onClick={closeModalAlert4}
+              disabled={loadingSendToReleased}
             >
               Cancel
             </button>
@@ -2868,8 +3024,93 @@ const AdminDashboard: React.FC = () => {
                 handleOutgoingClick();
               }}
               className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              disabled={loadingSendToReleased}
             >
               {loadingSendToReleased ? "Sending" : "Confirm"}
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal onClose={closeModalAlert5} isOpen={isModalOpen5} isCentered>
+        <ModalOverlay />
+        <ModalContent
+          style={{
+            marginLeft: "0.75rem",
+            marginRight: "0.75rem",
+          }}
+        >
+          <ModalHeader>Export</ModalHeader>
+          <ModalCloseButton onClick={closeModalAlert5} />
+          <ModalBody>
+            Export {selectedFilter} category{" "}
+            {startDate && endDate
+              ? `from ${startDate.toDateString()} to ${endDate.toDateString()}`
+              : startDate && !endDate
+              ? `from ${startDate.toDateString()}`
+              : endDate && !startDate
+              ? `from ${endDate.toDateString()} backwards`
+              : ""}
+            <Checkbox
+              name="permanentlydelete"
+              colorScheme="green"
+              className="mt-5"
+              isChecked={deletePermanently}
+              onChange={() => {
+                setDeletePermanently(!deletePermanently);
+              }}
+            >
+              Export & permanently delete from released category
+            </Checkbox>
+            {/* {!deletePermanently && (
+              <div className="mt-5">
+                <label className="text-[14px] text-gray-400">
+                  To save storage datas in released documents are automatically
+                  delete after 6 months from released date
+                </label>
+              </div>
+            )} */}
+          </ModalBody>
+          <ModalFooter className="gap-x-4">
+            <button
+              className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
+              onClick={closeModalAlert5}
+              disabled={loadingDeletePermanently}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async (e) => {
+                e.preventDefault();
+                await handleExport();
+                !loadingDeletePermanently && closeModalAlert5();
+              }}
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              disabled={loadingDeletePermanently}
+            >
+              {loadingDeletePermanently ? "Exporting" : "Export"}
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal onClose={closeModalAlert6} isOpen={isModalOpen6} isCentered>
+        <ModalOverlay />
+        <ModalContent
+          style={{
+            marginLeft: "0.75rem",
+            marginRight: "0.75rem",
+          }}
+        >
+          <ModalHeader>Failed to export</ModalHeader>
+          <ModalCloseButton onClick={closeModalAlert6} />
+          <ModalBody>No {selectedFilter} data.</ModalBody>
+          <ModalFooter className="gap-x-4">
+            <button
+              onClick={closeModalAlert6}
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              Okay
             </button>
           </ModalFooter>
         </ModalContent>
