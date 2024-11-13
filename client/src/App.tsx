@@ -13,6 +13,13 @@ import AdminDashboard from "./components/AdminDashBoard";
 import ChangePassword from "./components/ChangePassword";
 import EmailForChangePassword from "./components/EmailForChangePassword";
 
+if (process.env.NODE_ENV === 'production') {
+  if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === 'object') {
+    // @ts-ignore
+    window.__REACT_DEVTOOLS_GLOBAL_HOOK__.inject = () => {};
+  }
+}
+
 function App() {
   return (
     <ChakraProvider>
