@@ -321,6 +321,7 @@ const AdminDashboard: React.FC = () => {
       }
       localStorage.removeItem("isAuthenticated"); // Remove auth flag
       localStorage.removeItem("BearerToken");
+      localStorage.removeItem("Email");
       navigate("/Sign in for Admin");
     } catch (error) {
       console.error("Logout failed");
@@ -437,9 +438,9 @@ const AdminDashboard: React.FC = () => {
     }
     name = name.trim();
     if (name.length >= 11) {
-      return "Invalid mobile_num number";
+      return "Invalid mobile # ";
     } else if (name.length <= 9) {
-      return "Invalid mobile_num number";
+      return "Invalid mobile # ";
     }
   };
 
@@ -2517,7 +2518,7 @@ const AdminDashboard: React.FC = () => {
                                 htmlFor="mobile_num"
                                 className="block text-sm font-medium leading-6 text-gray-900"
                               >
-                                mobile_num #
+                                Mobile #
                               </label>
                               <div className="mt-2">
                                 <input

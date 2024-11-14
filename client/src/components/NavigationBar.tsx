@@ -51,7 +51,7 @@ const NavigationBar: React.FC = () => {
       localStorage.removeItem("isAuthenticated"); // Remove auth flag
       localStorage.removeItem("BearerToken");
       localStorage.removeItem("Email");
-      window.location.reload(); // Reload the app to reflect logout state
+      navigate("/Sign in for Admin");
     } catch (error) {
       console.error("Logout failed");
     }

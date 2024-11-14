@@ -1,6 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
+.env
 client/.env
 server/node_modules
 server/.pnp
@@ -25,3 +26,4 @@ server/yarn-error.log*
 client/.env
 client/.env
 client/.env
+server/.env

@@ -141,6 +141,7 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
     city,
     frontID,
     backID,
+    isAuthenticated,
   } = req.body;
 
   const namePattern = /^[a-zA-Z\s]+$/; // only letters and spaces
@@ -176,8 +177,10 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
   if (!alphanumericPattern.test(city)) errors.city = "Invalid city format";
 
   // Validate frontID and backID (if they are files, you might check if they were uploaded)
-  if (!frontID) errors.frontID = "Front ID is required";
-  if (!backID) errors.backID = "Back ID is required";
+  if (!isAuthenticated) {
+    if (!frontID) errors.frontID = "Front ID is required";
+    if (!backID) errors.backID = "Back ID is required";
+  }
 
   // Check if there are any errors
   if (Object.keys(errors).length > 0) {
@@ -582,8 +585,7 @@ const loginRateLimiter = rateLimit({
 
 app.post("/login", loginRateLimiter, async (req, res) => {
   const isProduction = process.env.DEVELOPMENT === "PRODUCTION";
-  const { email, password } = req.body;
-  console.log(req.body);
+  const { email, password, rememberMe } = req.body;
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -604,7 +606,7 @@ app.post("/login", loginRateLimiter, async (req, res) => {
       httpOnly: true,
       secure: isProduction, // Set to true in production (for HTTPS)
       sameSite: "Strict",
-      maxAge: 32400000,
+      maxAge: rememberMe === true ? 5 * 24 * 60 * 60 * 1000 : 32400000,
     });
 
     // Send back session and user information

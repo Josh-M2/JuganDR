@@ -53,8 +53,24 @@ const FillUpSedula: React.FC = () => {
   const navigate = useNavigate();
   const [frontIdObject, setFrontIdObject] = useState<File | null>(null);
   const [backIdObject, setBackIdObject] = useState<File | null>(null);
+
+  const [submitLoading, setSubmitLoading] = useState(false);
+
+  const [isModalOpen3, setIsModalOpen3] = useState(false);
+  const openModalAlert3 = () => setIsModalOpen3(true);
+  const closeModalAlert3 = () => setIsModalOpen3(false);
+
+  const [isModalOpen4, setIsModalOpen4] = useState(false);
+  const openModalAlert4 = () => setIsModalOpen4(true);
+  const closeModalAlert4 = () => setIsModalOpen4(false);
+
+  const countdownDuration = 1 * 60;
+  const [timeRemaining, setTimeRemaining] = useState<number>(countdownDuration);
+  const [isCountingDown, setIsCountingDown] = useState<boolean>(false);
+
   const [form, setForm] = useState<IndigencyForm>(() => {
     const savedForm = localStorage.getItem("sedulaForm");
+
     return savedForm
       ? JSON.parse(savedForm)
       : {
@@ -78,8 +94,21 @@ const FillUpSedula: React.FC = () => {
   });
 
   useEffect(() => {
-    localStorage.setItem("sedulaForm", JSON.stringify(form));
-  }, [form]);
+    const { frontID, backID, ...formToSave } = form;
+    localStorage.setItem("sedulaForm", JSON.stringify(formToSave));
+  }, [
+    form.first_name,
+    form.middle_name,
+    form.last_name,
+    form.age,
+    form.mobile_num,
+    form.street,
+    form.province,
+    form.barangay,
+    form.city,
+    form.ext_name,
+    form.document,
+  ]);
 
   const [error, setError] = useState<IndigencyForm>({
     document: "",
@@ -130,6 +159,7 @@ const FillUpSedula: React.FC = () => {
     setForm({ ...form, [name]: sanitizedTag });
   };
   const handleButtonClickedBack = () => {
+    clearFormData()
     window.history.back();
   };
 
@@ -284,8 +314,13 @@ const FillUpSedula: React.FC = () => {
     const provinceError = validateprovince(form.province);
     const barangayError = validatebarangay(form.barangay);
     const cityError = validatecity(form.city);
-    const frontIDError = validateFrontID(form.frontID);
-    const backIDError = validateBackID(form.backID);
+    let frontIDError = validateFrontID(form.frontID);
+    let backIDError = validateBackID(form.backID);
+
+    if (isAuthenticated) {
+      frontIDError = "";
+      backIDError = "";
+    }
 
     if (
       first_nameError ||
@@ -342,6 +377,7 @@ const FillUpSedula: React.FC = () => {
       return true;
     }
   };
+
   const uploadFile = async (file: File, path: string) => {
     const urlEnv = process.env.REACT_APP_SERVER_ACCESS;
 
@@ -361,51 +397,99 @@ const FillUpSedula: React.FC = () => {
     return null;
   };
 
+  const exceeded = localStorage.getItem("exceeded");
   const handleSubmit = async () => {
+    if (exceeded !== null) {
+      openModalAlert3();
+      return Promise.reject(new Error("Exceeded limit"));
+    }
     // console.log("clicke!");
     // e.preventDefault();
+    setSubmitLoading(true);
 
     const urlEnv = process.env.REACT_APP_SERVER_ACCESS;
-    console.log("urlEnv", urlEnv);
 
     try {
       let frontIDPath = null;
       let backIDPath = null;
 
       // Upload files to Supabase Storage
-      if (frontIdObject) {
-        console.log("frontIdObject", frontIdObject);
-        const frontIDResponse = await uploadFile(
-          frontIdObject,
-          `uploads/frontID-${Date.now()}.png`
-        );
-        frontIDPath = frontIDResponse?.path; // Use the path for further processing
-      }
+      if (!exceeded) {
+        if (frontIdObject) {
+          const frontIDResponse = await uploadFile(
+            frontIdObject,
+            `uploads/frontID-${Date.now()}.png`
+          );
+          frontIDPath = frontIDResponse?.path; // Use the path for further processing
+        }
 
-      if (backIdObject) {
-        const backIDResponse = await uploadFile(
-          backIdObject,
-          `uploads/backID-${Date.now()}.png`
-        );
-        backIDPath = backIDResponse?.path; // Use the path for further processing
-      }
+        if (backIdObject) {
+          const backIDResponse = await uploadFile(
+            backIdObject,
+            `uploads/backID-${Date.now()}.png`
+          );
+          backIDPath = backIDResponse?.path; // Use the path for further processing
+        }
 
-      const response = await axios.post(`${urlEnv}incoming_request`, {
-        ...form,
-        frontID: frontIDPath,
-        backID: backIDPath,
-      });
-      console.log("response", response);
-      if (response.data) {
+        const response = await axios.post(`${urlEnv}incoming_request`, {
+          ...form,
+          frontID: frontIDPath,
+          backID: backIDPath,
+          isAuthenticated: isAuthenticated,
+        });
+        console.log("response", response);
+        if (response.data) {
+          onClose();
+
+          clearFormData();
+          if (isAuthenticated) {
+            navigate("/Selection of Documents");
+          } else {
+            navigate("/Selection of Documents/?success=true");
+          }
+          localStorage.removeItem("exceeded");
+        }
+      }
+    } catch (error: any) {
+      console.error("Error submitting form", error.response);
+      if (error.response?.data?.errorAttempt) {
+        openModalAlert3();
         onClose();
-        // clearFormData();
-        navigate("/Selection of Documents");
+        const endTime = Date.now() + countdownDuration * 1000;
+        localStorage.setItem("exceeded", endTime.toString());
       }
-    } catch (error) {
-      console.error("Error submitting form", error);
       // Optionally handle the error, show a message, etc.
+      setSubmitLoading(false);
+      return Promise.reject(error);
     }
+    //localStorage.removeItem("indigencyForm");
   };
+
+  useEffect(() => {
+    if (isCountingDown && timeRemaining > 0) {
+      const timer = setInterval(() => {
+        setTimeRemaining((prevTime) => prevTime - 1);
+      }, 1000);
+
+      return () => clearInterval(timer);
+    } else if (timeRemaining <= 0) {
+      setIsCountingDown(false);
+      localStorage.removeItem("exceeded");
+    }
+  }, [isCountingDown, timeRemaining]);
+
+  useEffect(() => {
+    const savedEndTime = localStorage.getItem("exceeded");
+    if (savedEndTime) {
+      const timeLeft = Math.floor((Number(savedEndTime) - Date.now()) / 1000);
+      if (timeLeft > 0) {
+        setTimeRemaining(timeLeft);
+        setIsCountingDown(true);
+      } else {
+        localStorage.removeItem("exceeded");
+      }
+    }
+  }, []);
 
   // Handle image selection for the first input
   const handleFrontIDChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -826,7 +910,7 @@ const FillUpSedula: React.FC = () => {
             <div className="mt-6 pb-8 flex items-center justify-end gap-x-6 ">
               <button
                 type="button"
-                onClick={handleButtonClickedBack}
+                onClick={openModalAlert4}
                 className="text-sm font-semibold text-gray-900 py-2 px-3 rounded-md border hover:bg-slate-100"
               >
                 Back
@@ -867,6 +951,7 @@ const FillUpSedula: React.FC = () => {
                     type="button"
                     onClick={onClose}
                     className="text-sm font-semibold text-gray-900 py-2 px-3 rounded-md border hover:bg-slate-100"
+                    disabled={submitLoading}
                   >
                     Review
                   </button>
@@ -893,6 +978,7 @@ const FillUpSedula: React.FC = () => {
                       });
                     }}
                     className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    disabled={submitLoading}
                   >
                     Submit
                   </button>
@@ -905,6 +991,63 @@ const FillUpSedula: React.FC = () => {
           <Footer />
         </div>
       </div>
+      <Modal onClose={closeModalAlert3} isOpen={isModalOpen3} isCentered>
+        <ModalOverlay />
+        <ModalContent
+          style={{
+            marginLeft: "0.75rem",
+            marginRight: "0.75rem",
+          }}
+        >
+          <ModalHeader>Request limit exceeded</ModalHeader>
+          <ModalCloseButton onClick={closeModalAlert3} />
+          <ModalBody>Please try again later.</ModalBody>
+          <ModalFooter className="gap-x-4">
+            <button
+              className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
+              onClick={closeModalAlert3}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={closeModalAlert3}
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              Okay
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal onClose={closeModalAlert4} isOpen={isModalOpen4} isCentered>
+        <ModalOverlay />
+        <ModalContent
+          style={{
+            marginLeft: "0.75rem",
+            marginRight: "0.75rem",
+          }}
+        >
+          <ModalHeader>You haven't sent your request</ModalHeader>
+          <ModalCloseButton onClick={closeModalAlert4} />
+          <ModalBody>
+            Are you sure you want to go back to document selection page?
+          </ModalBody>
+          <ModalFooter className="gap-x-4">
+            <button
+              className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
+              onClick={closeModalAlert4}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleButtonClickedBack}
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              Confirm
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 };

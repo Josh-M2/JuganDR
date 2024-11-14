@@ -8,6 +8,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import LoaderRing from "./LoaderRing";
 import Footer from "./Footer";
+import NavigationBar from "./NavigationBar";
 
 interface LoginForm {
   email: String;
@@ -105,7 +106,7 @@ const Login: React.FC = () => {
         try {
           const response = await axios.post(
             `${process.env.REACT_APP_SERVER_ACCESS}login`,
-            { email: form.email, password: form.password },
+            { email: form.email, password: form.password, rememberMe },
             { withCredentials: true }
           );
           if (response) {
@@ -137,13 +138,13 @@ const Login: React.FC = () => {
           return;
         }
 
-        if (rememberMe) {
-          localStorage.setItem("email", String(form.email));
-          localStorage.setItem("password", String(form.password));
-        } else {
-          localStorage.removeItem("email");
-          localStorage.removeItem("password");
-        }
+        // if (rememberMe) {
+        //   localStorage.setItem("email", String(form.email));
+        //   localStorage.setItem("password", String(form.password));
+        // } else {
+        //   localStorage.removeItem("email");
+        //   localStorage.removeItem("password");
+        // }
 
         console.log("Login successful");
         navigate("/Admin Dashboard");
@@ -255,7 +256,7 @@ const Login: React.FC = () => {
                     id="email"
                     name="email"
                     type="text"
-                    autoComplete="email"
+                    autoComplete="username"
                     value={String(form.email)}
                     onChange={handleChange}
                     className={`px-3 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 border ${
@@ -339,7 +340,7 @@ const Login: React.FC = () => {
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)} // Update the state when checkbox changes
             >
-              Remember me?
+              Stay me logged in for 7 days
             </Checkbox>
           </div>
         </div>
