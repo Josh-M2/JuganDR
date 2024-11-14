@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import juganlogo from "./../assets/Jugan-logo.png";
 import check from "./../assets/check.svg";
 import dropdown from "./../assets/chevron-down.svg";
@@ -10,9 +10,18 @@ import {
   ListboxOption,
   ListboxOptions,
 } from "@headlessui/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import NavigationBar from "./NavigationBar";
 import Footer from "./Footer";
+import {
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+} from "@chakra-ui/react";
 
 const documents = [
   {
@@ -32,7 +41,37 @@ const documents = [
 const DocumentSelection: React.FC = () => {
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
   const [selectedDocs, setSelectedDocs] = useState(documents[0]);
+  const [isModalOpen4, setIsModalOpen4] = useState(false);
+  const openModalAlert4 = () => setIsModalOpen4(true);
+  const closeModalAlert4 = () => setIsModalOpen4(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  let success = searchParams.get("success");
+
+  useEffect(() => {
+    if (success !== null) {
+      switch (success) {
+        case "true":
+          openModalAlert4();
+          const newSearchParams1 = new URLSearchParams(searchParams);
+          newSearchParams1.delete("success");
+          setSearchParams(newSearchParams1);
+          success = "";
+
+          break;
+        // case "false":
+        //   openDialog2();
+        //   const newSearchParams2 = new URLSearchParams(searchParams);
+        //   newSearchParams2.delete("type");
+        //   setSearchParams(newSearchParams2);
+        //   success = "";
+        //   break;
+
+        default:
+          break;
+      }
+    }
+  }, []);
 
   const handleButtonClicked = () => {
     switch (selectedDocs.id) {
@@ -150,6 +189,31 @@ const DocumentSelection: React.FC = () => {
         </div>
       </div>
       <Footer />
+
+      <Modal onClose={closeModalAlert4} isOpen={isModalOpen4} isCentered>
+        <ModalOverlay />
+        <ModalContent
+          style={{
+            marginLeft: "0.75rem",
+            marginRight: "0.75rem",
+          }}
+        >
+          <ModalHeader>Important</ModalHeader>
+          <ModalCloseButton onClick={closeModalAlert4} />
+          <ModalBody>
+            You may get your requested document after 10 mins in our barangay
+            hall. Please bring valid ID upon claiming your requested document.
+          </ModalBody>
+          <ModalFooter className="gap-x-4">
+            <button
+              onClick={closeModalAlert4}
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              Thanks
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 };

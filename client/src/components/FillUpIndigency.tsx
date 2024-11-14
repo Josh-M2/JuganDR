@@ -55,9 +55,15 @@ const FillUpIndigency: React.FC = () => {
   const [backIdObject, setBackIdObject] = useState<File | null>(null);
 
   const [submitLoading, setSubmitLoading] = useState(false);
+
   const [isModalOpen3, setIsModalOpen3] = useState(false);
   const openModalAlert3 = () => setIsModalOpen3(true);
   const closeModalAlert3 = () => setIsModalOpen3(false);
+
+  const [isModalOpen4, setIsModalOpen4] = useState(false);
+  const openModalAlert4 = () => setIsModalOpen4(true);
+  const closeModalAlert4 = () => setIsModalOpen4(false);
+
   const countdownDuration = 1 * 60;
   const [timeRemaining, setTimeRemaining] = useState<number>(countdownDuration);
   const [isCountingDown, setIsCountingDown] = useState<boolean>(false);
@@ -87,8 +93,21 @@ const FillUpIndigency: React.FC = () => {
   });
 
   useEffect(() => {
-    localStorage.setItem("indigencyForm", JSON.stringify(form));
-  }, [form]);
+    const { frontID, backID, ...formToSave } = form;
+    localStorage.setItem("indigencyForm", JSON.stringify(formToSave));
+  }, [
+    form.first_name,
+    form.middle_name,
+    form.last_name,
+    form.age,
+    form.mobile_num,
+    form.street,
+    form.province,
+    form.barangay,
+    form.city,
+    form.ext_name,
+    form.document,
+  ]);
 
   const [error, setError] = useState<IndigencyForm>({
     document: "",
@@ -140,6 +159,7 @@ const FillUpIndigency: React.FC = () => {
   };
 
   const handleButtonClickedBack = () => {
+    clearFormData();
     window.history.back();
   };
 
@@ -415,11 +435,19 @@ const FillUpIndigency: React.FC = () => {
           ...form,
           frontID: frontIDPath,
           backID: backIDPath,
+          isAuthenticated: isAuthenticated,
         });
         console.log("response", response);
         if (response.data) {
           onClose();
-          navigate("/Selection of Documents");
+
+          clearFormData();
+          if (isAuthenticated) {
+            navigate("/Selection of Documents");
+          } else {
+            navigate("/Selection of Documents/?success=true");
+          }
+
           localStorage.removeItem("exceeded");
         }
       }
@@ -435,6 +463,7 @@ const FillUpIndigency: React.FC = () => {
       setSubmitLoading(false);
       return Promise.reject(error);
     }
+    //localStorage.removeItem("indigencyForm");
   };
 
   useEffect(() => {
@@ -882,7 +911,7 @@ const FillUpIndigency: React.FC = () => {
             <div className="mt-6 pb-8 flex items-center justify-end gap-x-6 ">
               <button
                 type="button"
-                onClick={handleButtonClickedBack}
+                onClick={openModalAlert4}
                 className="text-sm font-semibold text-gray-900 py-2 px-3 rounded-md border hover:bg-slate-100"
               >
                 Back
@@ -923,6 +952,7 @@ const FillUpIndigency: React.FC = () => {
                     type="button"
                     onClick={onClose}
                     className="text-sm font-semibold text-gray-900 py-2 px-3 rounded-md border hover:bg-slate-100"
+                    disabled={submitLoading}
                   >
                     Review
                   </button>
@@ -986,6 +1016,36 @@ const FillUpIndigency: React.FC = () => {
               className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               Okay
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal onClose={closeModalAlert4} isOpen={isModalOpen4} isCentered>
+        <ModalOverlay />
+        <ModalContent
+          style={{
+            marginLeft: "0.75rem",
+            marginRight: "0.75rem",
+          }}
+        >
+          <ModalHeader>You haven't sent your request</ModalHeader>
+          <ModalCloseButton onClick={closeModalAlert4} />
+          <ModalBody>
+            Are you sure you want to go back to document selection page?
+          </ModalBody>
+          <ModalFooter className="gap-x-4">
+            <button
+              className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
+              onClick={closeModalAlert4}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleButtonClickedBack}
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              Confirm
             </button>
           </ModalFooter>
         </ModalContent>
