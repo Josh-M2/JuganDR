@@ -18,6 +18,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import LoaderRing from "./LoaderRing";
 import NavigationBar from "./NavigationBar";
+import Footer from "./Footer";
 
 export const ErrorImage = () => {
   return <img src={errorimage} alt="error" className="w-3 h-3 mr-1.5" />;
@@ -258,6 +259,7 @@ const ChangePassword: React.FC = () => {
           </div>
         </div>
       </div>
+      <Footer />
 
       {/* session expired or autologout alert */}
       <Modal onClose={closeModalAlert1} isOpen={isModalOpen1} isCentered>
