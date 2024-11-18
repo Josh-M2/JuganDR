@@ -30,48 +30,65 @@ const documents = [
   },
   {
     id: 2,
-    name: "Sedula",
+    name: "Barangay Certificate",
   },
   {
     id: 3,
     name: "Barangay Clearance",
   },
+  {
+    id: 4,
+    name: "Senior Citizen Certificate",
+  },
+  {
+    id: 5,
+    name: "Barangay Business Permit",
+  },
+  {
+    id: 6,
+    name: "No Claims And Conflict",
+  },
+  {
+    id: 7,
+    name: "Barangay Residency",
+  },
 ];
 
 const DocumentSelection: React.FC = () => {
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-  const [selectedDocs, setSelectedDocs] = useState(documents[0]);
-  const [isModalOpen4, setIsModalOpen4] = useState(false);
-  const openModalAlert4 = () => setIsModalOpen4(true);
-  const closeModalAlert4 = () => setIsModalOpen4(false);
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  let success = searchParams.get("success");
 
-  useEffect(() => {
-    if (success !== null) {
-      switch (success) {
-        case "true":
-          openModalAlert4();
-          const newSearchParams1 = new URLSearchParams(searchParams);
-          newSearchParams1.delete("success");
-          setSearchParams(newSearchParams1);
-          success = "";
+  const [selectedDocs, setSelectedDocs] = useState(documents[0]);
+  // const [isModalOpen4, setIsModalOpen4] = useState(false);
+  // const openModalAlert4 = () => setIsModalOpen4(true);
+  // const closeModalAlert4 = () => setIsModalOpen4(false);
+  // const [searchParams, setSearchParams] = useSearchParams();
+  // let success = searchParams.get("success");
 
-          break;
-        // case "false":
-        //   openDialog2();
-        //   const newSearchParams2 = new URLSearchParams(searchParams);
-        //   newSearchParams2.delete("type");
-        //   setSearchParams(newSearchParams2);
-        //   success = "";
-        //   break;
+  // useEffect(() => {
+  //   if (success !== null) {
+  //     switch (success) {
+  //       case "true":
+  //         openModalAlert4();
+  //         const newSearchParams1 = new URLSearchParams(searchParams);
+  //         newSearchParams1.delete("success");
+  //         setSearchParams(newSearchParams1);
+  //         success = "";
 
-        default:
-          break;
-      }
-    }
-  }, []);
+  //         break;
+  //       // case "false":
+  //       //   openDialog2();
+  //       //   const newSearchParams2 = new URLSearchParams(searchParams);
+  //       //   newSearchParams2.delete("type");
+  //       //   setSearchParams(newSearchParams2);
+  //       //   success = "";
+  //       //   break;
+
+  //       default:
+  //         break;
+  //     }
+  //   }
+  // }, []);
 
   const handleButtonClicked = () => {
     switch (selectedDocs.id) {
@@ -79,10 +96,22 @@ const DocumentSelection: React.FC = () => {
         navigate(`/Barangay Indigency`);
         break;
       case 2:
-        navigate(`/Sedula`);
+        navigate(`/Barangay Certificate`);
         break;
       case 3:
         navigate(`/Barangay Clearance`);
+        break;
+      case 4:
+        navigate(`/Senior Citizen Certificate`);
+        break;
+      case 5:
+        navigate(`/Barangay Business Permit`);
+        break;
+      case 6:
+        navigate(`/No Claims And Conflict`);
+        break;
+      case 7:
+        navigate(`/Barangay Residency`);
         break;
       default:
         break;
@@ -176,6 +205,16 @@ const DocumentSelection: React.FC = () => {
               </button>
             </div>
 
+            <p className="mt-3 text-center text-sm text-gray-500">
+              Track your document{" "}
+              <a
+                href="/Track Document"
+                className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
+              >
+                here
+              </a>
+            </p>
+
             {/* <p className="mt-3 text-center text-sm text-gray-500">
             Track your document{" "}
             <a
@@ -190,7 +229,7 @@ const DocumentSelection: React.FC = () => {
       </div>
       <Footer />
 
-      <Modal onClose={closeModalAlert4} isOpen={isModalOpen4} isCentered>
+      {/* <Modal onClose={closeModalAlert4} isOpen={isModalOpen4} isCentered>
         <ModalOverlay />
         <ModalContent
           style={{
@@ -213,7 +252,7 @@ const DocumentSelection: React.FC = () => {
             </button>
           </ModalFooter>
         </ModalContent>
-      </Modal>
+      </Modal> */}
     </>
   );
 };

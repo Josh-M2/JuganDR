@@ -25,11 +25,30 @@ import { supabase } from "../config";
 import Footer from "./Footer";
 import { IndigencyForm } from "./FillUpIndigency";
 
+// interface IndigencyForm {
+//   document: string;
+//   first_name: string;
+//   middle_name: string;
+//   last_name: string;
+//   ext_name: string;
+//   age: string;
+//   mobile_num: string;
+//   // purpose: string;
+//   // purpose_for: string;
+//   // school: string;
+//   street: string;
+//   province: string;
+//   barangay: string;
+//   city: string;
+//   frontID: string;
+//   backID: string;
+// }
+
 export const ErrorImage = () => {
   return <img src={errorimage} alt="error" className="h-3 w-3 mr-1" />;
 };
 
-const FillUpBarangayClearance: React.FC = () => {
+const FillUpBarangayBusinessPermit: React.FC = () => {
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -55,11 +74,11 @@ const FillUpBarangayClearance: React.FC = () => {
   const [isCountingDown, setIsCountingDown] = useState<boolean>(false);
 
   const [form, setForm] = useState<IndigencyForm>(() => {
-    const savedForm = localStorage.getItem("BarangayClearanceForm");
+    const savedForm = localStorage.getItem("BarangayBusinessPermitForm");
     return savedForm
       ? JSON.parse(savedForm)
       : {
-          document: "Barangay Clearance",
+          document: "Barangay Business Permit",
           first_name: "",
           middle_name: "",
           last_name: "",
@@ -80,7 +99,10 @@ const FillUpBarangayClearance: React.FC = () => {
 
   useEffect(() => {
     const { frontID, backID, ...formToSave } = form;
-    localStorage.setItem("BarangayClearanceForm", JSON.stringify(formToSave));
+    localStorage.setItem(
+      "BarangayBusinessPermitForm",
+      JSON.stringify(formToSave)
+    );
   }, [
     form.first_name,
     form.middle_name,
@@ -94,7 +116,6 @@ const FillUpBarangayClearance: React.FC = () => {
     form.ext_name,
     form.document,
   ]);
-
   const [error, setError] = useState<IndigencyForm>({
     document: "",
     first_name: "",
@@ -137,6 +158,7 @@ const FillUpBarangayClearance: React.FC = () => {
       purok_certificate: "",
     });
   };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -377,6 +399,7 @@ const FillUpBarangayClearance: React.FC = () => {
       return true;
     }
   };
+
   const uploadFile = async (file: File, path: string) => {
     const urlEnv = process.env.REACT_APP_SERVER_ACCESS;
 
@@ -594,7 +617,7 @@ const FillUpBarangayClearance: React.FC = () => {
             <div className="space-y-12">
               <div className="border-b border-gray-900/10 pb-12">
                 <h2 className="text-base font-semibold leading-10 text-gray-900 mt-4 mb-4">
-                  Barangay Clearance
+                  Barangay Business Permit
                 </h2>
                 <h2 className="text-base font-semibold leading-7 text-gray-900">
                   Personal Information
@@ -938,7 +961,7 @@ const FillUpBarangayClearance: React.FC = () => {
                       id="document"
                       name="document"
                       type="text"
-                      value="Barangay Clearance"
+                      value="Barangay Business Permit"
                       readOnly
                       className={`hidden p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 `}
                     />
@@ -1102,35 +1125,36 @@ const FillUpBarangayClearance: React.FC = () => {
                   <button
                     type="button"
                     onClick={onClose}
-                    className="text-sm font-semibold text-gray-900 py-2 px-4 rounded-md border hover:bg-slate-100"
+                    className="text-sm font-semibold text-gray-900 py-2 px-3 rounded-md border hover:bg-slate-100"
                     disabled={submitLoading}
                   >
                     Review
                   </button>
                   <button
                     type="submit"
+                    disabled={submitLoading}
                     onClick={(e) => {
                       e.preventDefault();
                       const examplePromise = handleSubmit();
                       // onClose();
-
-                      toast.promise(examplePromise, {
-                        success: {
-                          title: "Sent",
-                          description: "Document request sent",
-                        },
-                        error: {
-                          title: "rejected",
-                          description: "Something wrong",
-                        },
-                        loading: {
-                          title: "Preparing",
-                          description: "Please wait",
-                        },
-                      });
+                      if (exceeded === null) {
+                        toast.promise(examplePromise, {
+                          success: {
+                            title: "Sent",
+                            description: "Document request sent",
+                          },
+                          error: {
+                            title: "Rejected",
+                            description: "Something went wrong",
+                          },
+                          loading: {
+                            title: "Preparing",
+                            description: "Please wait",
+                          },
+                        });
+                      }
                     }}
-                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm bg-indigo-600hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    disabled={submitLoading}
+                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                   >
                     {submitLoading ? "Submiting" : "Submit"}
                   </button>
@@ -1204,4 +1228,4 @@ const FillUpBarangayClearance: React.FC = () => {
   );
 };
 
-export default FillUpBarangayClearance;
+export default FillUpBarangayBusinessPermit;

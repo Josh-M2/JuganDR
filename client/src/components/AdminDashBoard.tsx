@@ -38,7 +38,7 @@ import { useNavigate } from "react-router-dom";
 import "../AdminDashboard.css";
 import axios from "axios";
 import { ErrorImage } from "./Login";
-import { IndigencyForm } from "./FillUpSedula";
+import { IndigencyForm } from "./FillUpIndigency";
 import NavigationBar from "./NavigationBar";
 import LoaderRing from "./LoaderRing";
 import trashcan from "./../assets/trash-can.svg";
@@ -55,8 +55,16 @@ import {
   ImageRun,
   TextWrappingType,
   TextWrappingSide,
+  Table as tableee,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
 } from "docx";
 import logoJugan from "./../assets/Jugan-logo.png";
+import headBoard from "./../assets/headboard.png";
+import square from "./../assets/square.png";
+
 import logoConsolacion from "./../assets/Consolacion-logo.png";
 import { url } from "inspector";
 import { createClient } from "@supabase/supabase-js";
@@ -79,6 +87,7 @@ interface data {
   last_name: string;
   middle_name: string;
   mobile_num: string; // Assuming mobile number is also a string
+  purpose: string;
   province: string;
   requested_at: string; // Date in string format (ISO 8601)
   street: string;
@@ -86,6 +95,7 @@ interface data {
   released_date: string;
   front_id: string;
   back_id: string;
+  purok_certificate: string;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -162,6 +172,7 @@ const AdminDashboard: React.FC = () => {
 
   const [frontIDUrl, setFrontIDUrl] = useState<string | null>(null);
   const [backIDUrl, setBackIDUrl] = useState<string | null>(null);
+  const [purokCert, setPurokCert] = useState<string | null>(null);
   const [loadingImageUrl, setLoadingImageUrl] = useState(false);
   const [images, setImages] = useState<{
     frontID: string;
@@ -210,12 +221,14 @@ const AdminDashboard: React.FC = () => {
     ext_name: "",
     age: "",
     mobile_num: "",
+    purpose: "",
     street: "",
     barangay: "",
     province: "",
     city: "",
     frontID: "",
     backID: "",
+    purok_certificate: "",
   });
 
   useEffect(() => {
@@ -228,12 +241,14 @@ const AdminDashboard: React.FC = () => {
         ext_name: selectedDatas.ext_name,
         age: selectedDatas.age,
         mobile_num: selectedDatas.mobile_num,
+        purpose: selectedDatas.purpose,
         street: selectedDatas.street,
         barangay: selectedDatas.barangay,
         province: selectedDatas.province,
         city: selectedDatas.city,
         frontID: selectedDatas.front_id,
         backID: selectedDatas.back_id,
+        purok_certificate: selectedDatas.purok_certificate,
       });
   }, [selectedDatas]);
 
@@ -271,12 +286,14 @@ const AdminDashboard: React.FC = () => {
         ext_name: selectedData.ext_name || "",
         age: selectedData.age || "",
         mobile_num: selectedData.mobile_num || "",
+        purpose: selectedData.purpose || "",
         street: selectedData.street || "",
         barangay: selectedData.barangay || "",
         province: selectedData.province || "",
         city: selectedData.city || "",
         frontID: selectedData.front_id || "",
         backID: selectedData.back_id || "",
+        purok_certificate: selectedData.purok_certificate,
       });
 
       setError({
@@ -287,7 +304,7 @@ const AdminDashboard: React.FC = () => {
         ext_name: "",
         age: "",
         mobile_num: "",
-        // purpose: "",
+        purpose: "",
         // purpose_for: "",
         // school: "",
         street: "",
@@ -296,6 +313,7 @@ const AdminDashboard: React.FC = () => {
         city: "",
         frontID: "",
         backID: "",
+        purok_certificate: "",
       });
     }
   };
@@ -357,12 +375,14 @@ const AdminDashboard: React.FC = () => {
         ext_name: selectedData.ext_name || "",
         age: selectedData.age || "",
         mobile_num: selectedData.mobile_num || "",
+        purpose: selectedData.purpose || "",
         street: selectedData.street || "",
         barangay: selectedData.barangay || "",
         province: selectedData.province || "",
         city: selectedData.city || "",
         frontID: selectedData.front_id || "",
         backID: selectedData.back_id || "",
+        purok_certificate: selectedData.purok_certificate || "",
       });
     }
   }, [selectedDataID, dataIncoming]);
@@ -375,7 +395,7 @@ const AdminDashboard: React.FC = () => {
     ext_name: "",
     age: "",
     mobile_num: "",
-    // purpose: "",
+    purpose: "",
     // purpose_for: "",
     // school: "",
     street: "",
@@ -384,6 +404,7 @@ const AdminDashboard: React.FC = () => {
     city: "",
     frontID: "",
     backID: "",
+    purok_certificate: "",
   });
 
   const handleChange = (
@@ -444,14 +465,14 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // const validatepurpose = (name: string) => {
-  //   const nameRegex = /^[a-zA-Z\s]+$/;
-  //   const test = nameRegex.test(name);
+  const validatepurpose = (name: string) => {
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    const test = nameRegex.test(name);
 
-  //   if (!test) {
-  //     return "Invalid last name";
-  //   }
-  // };
+    if (!test) {
+      return "Invalid last name";
+    }
+  };
 
   const validateschool = (name: string) => {
     const nameRegex = /^[a-zA-Z\s-]+$/;
@@ -508,7 +529,7 @@ const AdminDashboard: React.FC = () => {
     const last_nameError = validatelast_name(form.last_name);
     const ageError = validateage(form.age);
     const mobile_numError = validatemobile_num(form.mobile_num);
-    // const purposeError = validatepurpose(form.purpose);
+    const purposeError = validatepurpose(form.purpose);
     // const schoolError = validateschool(form.school);
     const streetError = validatestreet(form.street);
     const provinceError = validateprovince(form.province);
@@ -521,6 +542,7 @@ const AdminDashboard: React.FC = () => {
       last_nameError ||
       ageError ||
       mobile_numError ||
+      purposeError ||
       // schoolError ||
       streetError ||
       provinceError ||
@@ -534,7 +556,7 @@ const AdminDashboard: React.FC = () => {
         ext_name: "",
         age: ageError || "",
         mobile_num: mobile_numError || "",
-        // purpose: "",
+        purpose: purposeError || "",
         // purpose_for: "",
         // school: schoolError || "",
         street: streetError || "",
@@ -543,6 +565,7 @@ const AdminDashboard: React.FC = () => {
         city: cityError || "",
         frontID: "",
         backID: "",
+        purok_certificate: "",
       });
       setToggleEdit(true);
       return false;
@@ -555,7 +578,7 @@ const AdminDashboard: React.FC = () => {
         ext_name: "",
         age: "",
         mobile_num: "",
-        // purpose: "",
+        purpose: "",
         // purpose_for: "",
         // school: "",
         street: "",
@@ -564,6 +587,7 @@ const AdminDashboard: React.FC = () => {
         city: "",
         frontID: "",
         backID: "",
+        purok_certificate: "",
       });
 
       return true;
@@ -609,7 +633,7 @@ const AdminDashboard: React.FC = () => {
     } catch (error: any) {
       console.error("Error Updating form", error);
       // Optionally handle the error, show a message, etc.
-      if (error.response.status === 401) {
+      if (error.response?.status === 401) {
         openModalAlert1();
       }
     }
@@ -852,10 +876,10 @@ const AdminDashboard: React.FC = () => {
       processAndSetOutgoingData(response.data);
       setLoadingOutgoing(false);
     } catch (error: any) {
-      if (error.response.status == 404) {
+      if (error.response?.status == 404) {
         setLoadingOutgoing(false);
         processAndSetOutgoingData([]);
-      } else if (error.response.status === 401) {
+      } else if (error.response?.status === 401) {
         setLoadingOutgoing(false);
         openModalAlert1();
       }
@@ -876,10 +900,10 @@ const AdminDashboard: React.FC = () => {
       processAndSetIncomingData(data);
       setLoadingIncoming(false);
     } catch (error: any) {
-      if (error.response.status == 404) {
+      if (error.response?.status == 404) {
         setLoadingIncoming(false);
         processAndSetIncomingData([]);
-      } else if (error.response.status === 401) {
+      } else if (error.response?.status === 401) {
         setLoadingIncoming(false);
         openModalAlert1();
       }
@@ -898,10 +922,10 @@ const AdminDashboard: React.FC = () => {
       processAndSetReleasedData(response.data);
       setLoadingReleased(false);
     } catch (error: any) {
-      if (error.response.status == 404) {
+      if (error.response?.status == 404) {
         setLoadingReleased(false);
         processAndSetReleasedData([]);
-      } else if (error.response.status === 401) {
+      } else if (error.response?.status === 401) {
         setLoadingReleased(false);
         openModalAlert1();
       }
@@ -1034,6 +1058,9 @@ const AdminDashboard: React.FC = () => {
 
         console.log(response.data);
         // await fetchIncoming();
+        if (currentPage > totalPagesIncoming) {
+          setCurrentPage(totalPagesIncoming);
+        }
       }
     } catch (err: any) {
       console.error(`Error deleting data: ${err.message}`);
@@ -1114,6 +1141,9 @@ const AdminDashboard: React.FC = () => {
 
         console.log(response.data);
         // await fetchOutgoing();
+        if (currentPage > totalPagesOutgoing) {
+          setCurrentPage(totalPagesOutgoing);
+        }
       }
     } catch (err: any) {
       console.error(`Error deleting data: ${err.message}`);
@@ -1633,6 +1663,1079 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
+  const generateWordDocumentClearance = async (data: any) => {
+    if (data.document !== "Barangay Clearance") {
+      return;
+    }
+    console.log("generateWordDocumentClearance", data);
+    const {
+      age,
+      barangay,
+      city,
+      document,
+      ext_name,
+      first_name,
+      last_name,
+      middle_name,
+      province,
+      street,
+      purpose,
+    } = data;
+    const fontSizeBody = 24; //12px
+    const fontSizeHeader = 20; //11px
+    const font = "Arial";
+    const day: Date = new Date();
+    const date: number = day.getDate(); // Day of the month (1-31)
+    const month: string = day.toLocaleString("default", { month: "long" });
+    const monthNumber = day.getMonth() + 1;
+    const year: number = day.getFullYear(); // 4-digit year
+    const dayName: string = day.toLocaleString("default", { weekday: "long" }); // Full name of the day
+
+    const issuedDate = ` ${date}th `;
+    const issuedMonthYear = ` ${month} ${year} `;
+    const fullName = ` ${toUpperCase(first_name)} ${toUpperCase(
+      middle_name
+    )} ${toUpperCase(last_name)}${
+      ext_name ? ` ${toUpperCase(ext_name)}` : ""
+    } `;
+    const fullAddress = ` ${street}, ${barangay}, ${province}, ${city}`;
+    console.log("fullName", fullName);
+    const addresslang = `PUROK ${toUpperCase(street)}, ${toUpperCase(
+      barangay
+    )}, ${province}`;
+    console.log("address", addresslang);
+    console.log("barangay", barangay);
+    console.log(`PUROK ${toUpperCase(street)} ${toUpperCase(barangay)}`);
+
+    const purposetext = `FOR ${toUpperCase(purpose)}`;
+
+    // const dataItem = {
+    //   name: "John Doe",
+    //   age: "18",
+    //   address: "Purok 5, Barangay Jugan, Consolacion, Cebu",
+    //   father: "Juan Dela Cruz",
+    //   fatherAge: "46",
+    //   mother: "Maria Dela Cruz",
+    //   motherAge: "40",
+    //   issuedDate: "16th day of March 2021",
+    //   purpose: "SCHOLARSHIP APPLICATION at SM FOUNDATION",
+    // };
+
+    const shortBondPaperSize = {
+      width: 12240,
+      height: 15840,
+    };
+
+    const doc = new Document({
+      sections: [
+        {
+          properties: {
+            page: {
+              size: {
+                width: 12240, // 8.5 inches in twips
+                height: 15840, // 11 inches in twips
+              },
+              margin: {
+                top: 720, // 0.5 inches
+                bottom: 720, // 0.5 inches
+                left: 720, // 0.5 inches
+                right: 720, // 0.5 inches
+              },
+            },
+          },
+          children: [
+            // Outer table (black border)
+            new tableee({
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [
+                        // Middle table (blue border)
+                        new tableee({
+                          rows: [
+                            new TableRow({
+                              children: [
+                                new TableCell({
+                                  children: [
+                                    // Inner table (red border)
+                                    new tableee({
+                                      rows: [
+                                        new TableRow({
+                                          children: [
+                                            new TableCell({
+                                              children: [
+                                                new Paragraph("\n"),
+                                                new Paragraph("\n"),
+                                                new Paragraph("\n"),
+                                                new Paragraph("\n"),
+
+                                                new Paragraph({
+                                                  // Set text wrapping to in front of text
+                                                  alignment:
+                                                    AlignmentType.CENTER,
+                                                  children: [
+                                                    new ImageRun({
+                                                      data: await fetch(
+                                                        logoJugan
+                                                      ).then((res) =>
+                                                        res.arrayBuffer()
+                                                      ), // Fetch the image and convert it to ArrayBuffer
+                                                      transformation: {
+                                                        width: 123, // Set width in twips
+                                                        height: 123, // Set height in twips
+                                                      },
+                                                      // floating: {
+                                                      //   horizontalPosition: {
+                                                      //     align: "center",
+                                                      //     relative: "column",
+                                                      //   },
+                                                      //   verticalPosition: {
+                                                      //     align: "center",
+                                                      //     relative: "margin",
+                                                      //   },
+                                                      // },
+                                                      type: "png",
+                                                    }),
+                                                  ],
+                                                }),
+
+                                                new Paragraph("\n"),
+
+                                                new Paragraph({
+                                                  alignment:
+                                                    AlignmentType.CENTER,
+                                                  children: [
+                                                    new TextRun({
+                                                      text: "BARANGAY OFFICIALS",
+                                                      font: font,
+                                                      bold: true,
+                                                      color: "#FF0000",
+                                                      size: fontSizeBody,
+                                                    }),
+                                                  ],
+                                                }),
+
+                                                new Paragraph({
+                                                  // Set text wrapping to in front of text
+                                                  alignment:
+                                                    AlignmentType.CENTER,
+                                                  children: [
+                                                    new ImageRun({
+                                                      data: await fetch(
+                                                        headBoard
+                                                      ).then((res) =>
+                                                        res.arrayBuffer()
+                                                      ), // Fetch the image and convert it to ArrayBuffer
+                                                      transformation: {
+                                                        width: 150, // Set width in twips
+                                                        height: 40, // Set height in twips
+                                                      },
+                                                      // floating: {
+                                                      //   horizontalPosition: {
+                                                      //     align: "center",
+                                                      //     relative: "column",
+                                                      //   },
+                                                      //   verticalPosition: {
+                                                      //     align: "center",
+                                                      //     relative: "margin",
+                                                      //   },
+                                                      // },
+                                                      type: "png",
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "HON. ANTONIETTO S. PEPITO",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Punong Barangay",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "HON. RACHEL J. ABUCAY",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Barangay Kagawad",
+                                                      break: 1,
+                                                      bold: true,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Education and Day Care",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Women's and PWD",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "HON. LICERIO, JR. L. DUMADAG",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Barangay Kagawad",
+                                                      break: 1,
+                                                      bold: true,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Finance and Appropriation",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Environmental Management",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "HON. JOSELITO C. CABAHUG",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Barangay Kagawad",
+                                                      break: 1,
+                                                      bold: true,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Investment Trade and Industry and Livelihood",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Public Utilities",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "HON. DIOSDADA L GIELCZYK",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Barangay Kagawad",
+                                                      break: 1,
+                                                      bold: true,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Gender and Development",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Senior Citizen",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "HON. NEIL C. PEPITO",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Barangay Kagawad",
+                                                      break: 1,
+                                                      bold: true,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Health and Sanitation",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Clean and Green and Solid Waste Management",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "HON. EMILIANO S. PEPITO JR.",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Barangay Kagawad",
+                                                      break: 1,
+                                                      bold: true,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Public Works and Land Use",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "HON. ENRICO S. IWAY",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Barangay Kagawad",
+                                                      break: 1,
+                                                      bold: true,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Peace and Order",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Agriculture",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "HON. DIANE CLARE A. PASILANG",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "SK Chairman",
+                                                      break: 1,
+                                                      bold: true,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Sports and Youth Development",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Committee on Cultural Arts and Tourism",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "\n",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "\n",
+                                                      break: 1,
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new ImageRun({
+                                                      data: await fetch(
+                                                        headBoard
+                                                      ).then((res) =>
+                                                        res.arrayBuffer()
+                                                      ), // Fetch the image and convert it to ArrayBuffer
+                                                      transformation: {
+                                                        width: 150, // Set width in twips
+                                                        height: 40, // Set height in twips
+                                                      },
+                                                      // floating: {
+                                                      //   horizontalPosition: {
+                                                      //     align: "center",
+                                                      //     relative: "column",
+                                                      //   },
+                                                      //   verticalPosition: {
+                                                      //     align: "center",
+                                                      //     relative: "margin",
+                                                      //   },
+                                                      // },
+                                                      type: "png",
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "JANINE VICTORIA LIMOSNERO",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Barangay Secretary",
+                                                      break: 1,
+
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+
+                                                    new TextRun({
+                                                      text: "RACHELLE N. PUTONG",
+                                                      bold: true,
+                                                      break: 2,
+                                                      size: 16,
+                                                      font: font,
+                                                    }),
+                                                    new TextRun({
+                                                      text: "Barangay Treasurer",
+                                                      break: 1,
+
+                                                      size: 12,
+                                                      font: font,
+                                                    }),
+                                                  ],
+                                                }),
+
+                                                new Paragraph("\n"),
+                                                new Paragraph("\n"),
+                                                new Paragraph("\n"),
+                                                new Paragraph("\n"),
+                                              ],
+                                              width: {
+                                                size: 25, // 25% width (1/4)
+                                                type: WidthType.PERCENTAGE,
+                                              },
+                                              borders: {
+                                                top: {
+                                                  style: BorderStyle.SINGLE,
+                                                  size: 32,
+                                                  color: "FF0000",
+                                                }, // Red
+                                                bottom: {
+                                                  style: BorderStyle.SINGLE,
+                                                  size: 32,
+                                                  color: "FF0000",
+                                                },
+                                                left: {
+                                                  style: BorderStyle.SINGLE,
+                                                  size: 32,
+                                                  color: "FF0000",
+                                                },
+                                                right: {
+                                                  style: BorderStyle.SINGLE,
+                                                  size: 32,
+                                                  color: "FF0000",
+                                                },
+                                              },
+                                            }),
+                                            new TableCell({
+                                              children: [
+                                                new tableee({
+                                                  rows: [
+                                                    new TableRow({
+                                                      children: [
+                                                        new TableCell({
+                                                          children: [
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.CENTER,
+                                                              children: [
+                                                                new TextRun({
+                                                                  text: "Republic of the Philippines",
+                                                                  bold: true,
+                                                                  break: 1,
+                                                                  font: "Lucida Calligraphy",
+                                                                  color:
+                                                                    "#4472C4",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "Province of Cebu",
+                                                                  font: font,
+                                                                  break: 1,
+                                                                  color:
+                                                                    "#FF0000",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "Municipality of Consolacion",
+                                                                  font: font,
+                                                                  break: 1,
+                                                                  color:
+                                                                    "#00B050",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "Sangguniang Barangay of Jugan",
+                                                                  break: 1,
+                                                                  bold: true,
+                                                                  font: "Old English Text MT",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "Tel. No. 239 – 1361",
+                                                                  font: font,
+                                                                  break: 1,
+                                                                  bold: true,
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "OFFICE OF THE PUNONG BARANGAY",
+                                                                  bold: true,
+                                                                  underline: {
+                                                                    type: "thick", // Underline style
+                                                                    color:
+                                                                      "000000", // Optional underline color
+                                                                  },
+                                                                  break: 1,
+                                                                  size: 20,
+                                                                  font: "Times new roman",
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "BARANGAY CLEARANCE",
+                                                                  bold: true,
+                                                                  break: 2,
+                                                                  size: fontSizeBody,
+                                                                  font: "Times new roman",
+                                                                  color:
+                                                                    "650303",
+                                                                }),
+                                                              ],
+                                                            }),
+
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.RIGHT,
+                                                              children: [
+                                                                new TextRun({
+                                                                  text: "BJ NO. _______",
+                                                                  break: 1,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `${monthNumber}/${date}/${year}`,
+                                                                  break: 1,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `(Date)\t`,
+                                                                  break: 1,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                              ],
+                                                            }),
+
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.JUSTIFIED,
+                                                              children: [
+                                                                new TextRun({
+                                                                  text: "\tThis is to certify that the applicant whose name, picture, signature and thumb marks appearing hereto has not been brought before the Lupon/Pangkat of this Barangay for any complaint against him, nor has committed any infraction of laws/ordinances as of this date, he is a law-abiding citizen",
+                                                                  break: 1,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                              ],
+                                                            }),
+
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.LEFT,
+                                                              children: [
+                                                                new TextRun({
+                                                                  text: `NAME\t\t\t `,
+                                                                  break: 1,
+                                                                  bold: true,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `:`,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `${fullName}`,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `HOME ADDRESS\t `,
+                                                                  bold: true,
+                                                                  break: 1,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `: `,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `${addresslang}`,
+
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "PLACE OF BIRTH\t ",
+                                                                  break: 1,
+                                                                  bold: true,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `: `,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "DATE OF BIRTH\t ",
+                                                                  break: 1,
+                                                                  bold: true,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `: `,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "REMARKS\t\t ",
+                                                                  break: 2,
+                                                                  bold: true,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `: `,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `PURPOSE\t\t `,
+                                                                  break: 2,
+                                                                  bold: true,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: `: `,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+
+                                                                new TextRun({
+                                                                  text: `${purposetext}`,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                              ],
+                                                            }),
+
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.RIGHT,
+                                                              children: [
+                                                                new TextRun({
+                                                                  text: "______________________",
+                                                                  break: 3,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "     Applicant's Signature\t",
+                                                                  break: 1,
+
+                                                                  font: "Times new roman",
+                                                                  size: 20,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "\n",
+                                                                  break: 1,
+
+                                                                  font: "Times new roman",
+                                                                  size: 20,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "\n",
+                                                                  break: 1,
+
+                                                                  font: "Times new roman",
+                                                                  size: 20,
+                                                                }),
+                                                              ],
+                                                            }),
+
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.RIGHT,
+
+                                                              children: [
+                                                                new ImageRun({
+                                                                  data: await fetch(
+                                                                    square
+                                                                  ).then(
+                                                                    (res) =>
+                                                                      res.arrayBuffer()
+                                                                  ), // Fetch the image and convert it to ArrayBuffer
+                                                                  transformation:
+                                                                    {
+                                                                      width: 73, // Set width in twips
+                                                                      height: 73, // Set height in twips
+                                                                    },
+
+                                                                  type: "png",
+                                                                }),
+
+                                                                new TextRun({
+                                                                  text: "\t",
+                                                                  font: "Times new roman",
+                                                                  size: 20,
+                                                                }),
+                                                                new ImageRun({
+                                                                  data: await fetch(
+                                                                    square
+                                                                  ).then(
+                                                                    (res) =>
+                                                                      res.arrayBuffer()
+                                                                  ), // Fetch the image and convert it to ArrayBuffer
+                                                                  transformation:
+                                                                    {
+                                                                      width: 73, // Set width in twips
+                                                                      height: 73, // Set height in twips
+                                                                    },
+
+                                                                  type: "png",
+                                                                }),
+                                                              ],
+                                                            }),
+
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.RIGHT,
+
+                                                              children: [
+                                                                new TextRun({
+                                                                  text: "Left",
+
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "\t\tRight\t",
+
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                              ],
+                                                            }),
+
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.RIGHT,
+
+                                                              children: [
+                                                                new TextRun({
+                                                                  text: "   Thumb Marks\t\t",
+                                                                  bold: true,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                              ],
+                                                            }),
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.LEFT,
+
+                                                              children: [
+                                                                new TextRun({
+                                                                  text: "VALID FOR\t\t",
+
+                                                                  bold: true,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: ` : `,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "Res. Cert. No.\t\t",
+                                                                  break: 2,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: ` : `,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "Issued at \t\t",
+                                                                  break: 1,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: ` : CONSOLACION, CEBU`,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                              ],
+                                                            }),
+
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.RIGHT,
+                                                              children: [
+                                                                new TextRun({
+                                                                  text: "HON. ANTONIETTO S. PEPITO",
+                                                                  bold: true,
+                                                                  break: 2,
+                                                                  size: 20,
+                                                                  font: "Times new roman",
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "Punong Barangay\t\t",
+                                                                  break: 1,
+                                                                  size: 20,
+                                                                  font: "Times new roman",
+                                                                }),
+                                                              ],
+                                                            }),
+
+                                                            new Paragraph({
+                                                              alignment:
+                                                                AlignmentType.LEFT,
+                                                              children: [
+                                                                new TextRun({
+                                                                  text: "Paid Under",
+                                                                  break: 2,
+                                                                  font: "Times new roman",
+                                                                  size: fontSizeHeader,
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "O.R No.\t\t: ",
+
+                                                                  break: 1,
+                                                                  size: 20,
+                                                                  font: "Times new roman",
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "Amount Paid\t: ₱ 75.00",
+
+                                                                  break: 1,
+                                                                  size: 20,
+                                                                  font: "Times new roman",
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "Doc. Stamp\t: ₱ 30.00",
+
+                                                                  break: 1,
+                                                                  size: 20,
+                                                                  font: "Times new roman",
+                                                                }),
+                                                                new TextRun({
+                                                                  text: "Not valid if there are erasures, without computerized photo or without official dry seal. Falsification is punishable by law under Act. 171 PRC.",
+
+                                                                  break: 2,
+                                                                  size: 20,
+                                                                  font: "Times new roman",
+                                                                }),
+                                                              ],
+                                                            }),
+                                                          ],
+                                                          borders: {
+                                                            top: {
+                                                              style:
+                                                                BorderStyle.SINGLE,
+                                                              size: 42,
+                                                              color: "FFFFFF",
+                                                            }, // Red
+                                                            bottom: {
+                                                              style:
+                                                                BorderStyle.SINGLE,
+                                                              size: 42,
+                                                              color: "FFFFFF",
+                                                            },
+                                                            left: {
+                                                              style:
+                                                                BorderStyle.SINGLE,
+                                                              size: 42,
+                                                              color: "FFFFFF",
+                                                            },
+                                                            right: {
+                                                              style:
+                                                                BorderStyle.SINGLE,
+                                                              size: 42,
+                                                              color: "FFFFFF",
+                                                            },
+                                                          },
+                                                        }),
+                                                      ],
+                                                    }),
+                                                  ],
+                                                }),
+                                              ],
+                                              borders: {
+                                                top: {
+                                                  style: BorderStyle.SINGLE,
+                                                  size: 32,
+                                                  color: "FF0000",
+                                                }, // Red
+                                                bottom: {
+                                                  style: BorderStyle.SINGLE,
+                                                  size: 32,
+                                                  color: "FF0000",
+                                                },
+                                                left: {
+                                                  style: BorderStyle.SINGLE,
+                                                  size: 32,
+                                                  color: "FF0000",
+                                                },
+                                                right: {
+                                                  style: BorderStyle.SINGLE,
+                                                  size: 32,
+                                                  color: "FF0000",
+                                                },
+                                              },
+                                            }),
+                                          ],
+                                        }),
+                                      ],
+                                      width: {
+                                        size: 100,
+                                        type: WidthType.PERCENTAGE,
+                                      },
+                                    }),
+                                  ],
+                                  borders: {
+                                    top: {
+                                      style: BorderStyle.SINGLE,
+                                      size: 32,
+                                      color: "0000FF",
+                                    }, // Blue
+                                    bottom: {
+                                      style: BorderStyle.SINGLE,
+                                      size: 32,
+                                      color: "0000FF",
+                                    },
+                                    left: {
+                                      style: BorderStyle.SINGLE,
+                                      size: 32,
+                                      color: "0000FF",
+                                    },
+                                    right: {
+                                      style: BorderStyle.SINGLE,
+                                      size: 32,
+                                      color: "0000FF",
+                                    },
+                                  },
+                                  margins: {
+                                    // Add margin to simulate padding
+                                    top: 0, // Margin in twips
+                                    bottom: 0, // Margin in twips
+                                    left: 0, // Margin in twips
+                                    right: 0, // Margin in twips
+                                  },
+                                }),
+                              ],
+                            }),
+                          ],
+                          width: {
+                            size: 100,
+                            type: WidthType.PERCENTAGE,
+                          },
+                        }),
+                      ],
+                      borders: {
+                        top: {
+                          style: BorderStyle.SINGLE,
+                          size: 16,
+                          color: "000000",
+                        }, // Black
+                        bottom: {
+                          style: BorderStyle.SINGLE,
+                          size: 16,
+                          color: "000000",
+                        },
+                        left: {
+                          style: BorderStyle.SINGLE,
+                          size: 16,
+                          color: "000000",
+                        },
+                        right: {
+                          style: BorderStyle.SINGLE,
+                          size: 16,
+                          color: "000000",
+                        },
+                      },
+                    }),
+                  ],
+                }),
+              ],
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+            }),
+          ],
+        },
+      ],
+    });
+
+    // Convert the document to a Blob and download
+    Packer.toBlob(doc).then((blob) => {
+      saveAs(blob, "Certificate_of_Indigency.docx");
+    });
+  };
+
   const getPublicUrl = async (datas: any) => {
     setLoadingImageUrl(true);
     console.log("datas", datas);
@@ -1646,6 +2749,7 @@ const AdminDashboard: React.FC = () => {
       console.log("responsebackid", response.data.backId);
       setFrontIDUrl(response.data.frontId);
       setBackIDUrl(response.data.backId);
+      setPurokCert(response.data.purokC);
     }
     setLoadingImageUrl(false);
   };
@@ -1732,7 +2836,7 @@ const AdminDashboard: React.FC = () => {
         setLoadingDeletePermanently(false);
       } catch (error: any) {
         console.error("error permantly delete datas in released");
-        if (error.response.status === 401) {
+        if (error.response?.status === 401) {
           console.log("error permantly delete: ", error);
           setLoadingDeletePermanently(false);
           openModalAlert1();
@@ -2110,21 +3214,31 @@ const AdminDashboard: React.FC = () => {
                                 >
                                   Release
                                 </button>
-                                <button
-                                  onClick={() => {
-                                    switch (dataItem.document) {
-                                      case "Barangay Indigency":
-                                        generateWordDocumentIndigency(dataItem);
-                                        break;
+                                {dataItem.document === "Barangay Clearance" && (
+                                  <button
+                                    onClick={() => {
+                                      switch (dataItem.document) {
+                                        case "Barangay Indigency":
+                                          generateWordDocumentIndigency(
+                                            dataItem
+                                          );
+                                          break;
 
-                                      default:
-                                        break;
-                                    }
-                                  }}
-                                  className="rounded-xl py-1 px-3 text-slate-50 bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                                >
-                                  Generate
-                                </button>
+                                        case "Barangay Clearance":
+                                          generateWordDocumentClearance(
+                                            dataItem
+                                          );
+                                          break;
+
+                                        default:
+                                          break;
+                                      }
+                                    }}
+                                    className="rounded-xl py-1 px-3 text-slate-50 bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                                  >
+                                    Generate
+                                  </button>
+                                )}
 
                                 <Tooltip label="Delete" aria-label="A tooltip">
                                   <button
@@ -2542,6 +3656,35 @@ const AdminDashboard: React.FC = () => {
                                 )}
                               </div>
                             </div>
+                            <div className="sm:col-span-3">
+                              <label
+                                htmlFor="purpose"
+                                className="block text-sm font-medium leading-6 text-gray-900"
+                              >
+                                Purpose
+                              </label>
+                              <div className="mt-2">
+                                <input
+                                  id="purpose"
+                                  name="purpose"
+                                  value={form.purpose}
+                                  readOnly={!toggleEdit}
+                                  onChange={handleChange}
+                                  type="text"
+                                  className={`p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                                    error.purpose
+                                      ? "border-2 border-rose-600"
+                                      : ""
+                                  }`}
+                                />
+                                {error.purpose && (
+                                  <label className="flex items-center mt-1 text-rose-600">
+                                    <ErrorImage />
+                                    {error.purpose}
+                                  </label>
+                                )}
+                              </div>
+                            </div>
                             {/* here paste 1 */}
                             <div className="sm:col-span-3 sm:col-start-1">
                               <label
@@ -2727,6 +3870,37 @@ const AdminDashboard: React.FC = () => {
                                 </div>
                               )}
                             </div>
+                            <div className="sm:col-span-6">
+                              <label
+                                htmlFor="city"
+                                className="block text-sm font-medium leading-6 text-gray-900"
+                              >
+                                Purok Certificate
+                              </label>
+                              {loadingImageUrl ? (
+                                <div className="flex items-center justify-center min-h-[297px]">
+                                  <LoaderRing />
+                                </div>
+                              ) : (
+                                <div className="min-h-[297px] cursor-pointer flex items-center justify-center border rounded-lg">
+                                  {purokCert ? (
+                                    <Image
+                                      src={purokCert ? purokCert : "Loading"}
+                                      onClick={() => {
+                                        window.open(
+                                          purokCert ? purokCert : "",
+                                          "_blank"
+                                        );
+                                      }}
+                                      alt="Back image preview"
+                                      className="rounded-lg shadow-md my-1"
+                                    />
+                                  ) : (
+                                    "No data"
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -2890,7 +4064,9 @@ const AdminDashboard: React.FC = () => {
         >
           <ModalHeader>Are you sure to delete?</ModalHeader>
           <ModalCloseButton onClick={closeModalAlert2} />
-          <ModalBody>This will delete the data.</ModalBody>
+          <ModalBody>
+            This will delete the data and reject the request
+          </ModalBody>
           <ModalFooter className="gap-x-4">
             <button
               className="px-4 py-2 text-black bg-white text-black rounded-xl border border-gray hover:bg-gray-300 transition-colors duration-300 w-fit cursor-pointer"
