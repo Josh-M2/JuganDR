@@ -1,4 +1,4 @@
-import express from "express";
+import express, { query } from "express";
 import { createClient } from "@supabase/supabase-js";
 import cors from "cors";
 import { config } from "dotenv";
@@ -63,9 +63,9 @@ app.get("/get-access-token", async (req, res) => {
 });
 
 app.get("/get-images", async (req, res) => {
-  const { front_id, back_id } = req.query.selectedDatas;
+  const { front_id, back_id, purok_certificate } = req.query.selectedDatas;
   const accessToken = req.cookies.accessToken;
-  console.log(front_id, back_id);
+  console.log(front_id, back_id, purok_certificate);
   console.log("req.query.selectedDatas", req.query.selectedDatas);
 
   if (!accessToken) {
@@ -79,7 +79,7 @@ app.get("/get-images", async (req, res) => {
     },
   });
 
-  let frontId, backId;
+  let frontId, backId, purokC;
 
   try {
     const { data: front, error: errorfront } =
@@ -113,7 +113,21 @@ app.get("/get-images", async (req, res) => {
     backId = back.signedUrl;
   }
 
-  return res.send({ frontId, backId });
+  const { data: purokCert, error: errorpurokCert } =
+    await supabaseForAuthenticated.storage
+      .from("uploads")
+      .createSignedUrl(purok_certificate, 32400);
+
+  if (errorpurokCert) {
+    console.error("error fetching images1:", errorpurokCert);
+  }
+
+  if (purokCert) {
+    console.log("data_get_images1:", purokCert.signedUrl);
+    purokC = purokCert.signedUrl;
+  }
+
+  return res.send({ frontId, backId, purokC });
 });
 
 const incoming_requestRateLimiter = rateLimit({
@@ -135,12 +149,14 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
     ext_name,
     age,
     mobile_num,
+    purpose,
     street,
     barangay,
     province,
     city,
     frontID,
     backID,
+    purok_certificate,
     isAuthenticated,
   } = req.body;
 
@@ -165,6 +181,9 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
   if (!numberPattern.test(age) || age < 1 || age > 120)
     errors.age = "Age must be a valid number between 1 and 120";
 
+  if (!namePattern.test(purpose))
+    errors.purpose = "Invalid last purpose format";
+
   if (!phonePattern.test(mobile_num))
     errors.mobile_num = "Mobile number must be 10-15 digits";
 
@@ -180,6 +199,8 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
   if (!isAuthenticated) {
     if (!frontID) errors.frontID = "Front ID is required";
     if (!backID) errors.backID = "Back ID is required";
+    if (!purok_certificate)
+      errors.purok_certificate = "Purok Certificate is required";
   }
 
   // Check if there are any errors
@@ -187,28 +208,116 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
     return res.status(400).json({ error: errors });
   }
 
-  const { data, error } = await supabase.from(`incoming`).insert({
-    first_name,
-    middle_name,
-    last_name,
-    ext_name,
-    age,
-    mobile_num,
-    street,
-    barangay,
-    province,
-    city,
-    document,
-    front_id: frontID,
-    back_id: backID,
-  });
+  const { data, error } = await supabase
+    .from("incoming")
+    .insert({
+      first_name,
+      middle_name,
+      last_name,
+      ext_name,
+      age,
+      mobile_num,
+      purpose,
+
+      street,
+      barangay,
+      province,
+      city,
+      document,
+      front_id: frontID,
+      back_id: backID,
+      purok_certificate,
+    })
+    .select("requested_at, id");
 
   if (error) {
     console.log(JSON.stringify(error));
     return res.send("Error inserting data" + JSON.stringify(error));
   }
 
-  return res.send("Data Saved");
+  return res
+    .status(200)
+    .json({ requested_at: data[0].requested_at, id: data[0].id });
+});
+
+app.post("/save-tracking-id", async (req, res) => {
+  const { tracking_id, id } = req.body;
+  console.log("req.bodytracking:", req.body);
+
+  const { data, error } = await supabase
+    .from("incoming")
+    .update({ track_id: tracking_id })
+    .eq("id", id)
+    .select("track_id");
+
+  console.log("tracking", data);
+
+  if (error) {
+    console.log("error inserting tracking ID:", error);
+    return res.send(error);
+  }
+
+  return res.status(200).json({ track_id: data[0].track_id });
+});
+
+app.get("/fetch-data-for-tracking", async (req, res) => {
+  const { data: incoming, error: errorincoming } = await supabase
+    .from("incoming")
+    .select("track_id")
+    .eq("track_id", req.query.trackIdState);
+
+  if (errorincoming) {
+    console.error("error tracking fetching:", errorincoming);
+  }
+
+  if (incoming[0]?.track_id) {
+    console.log("incoming2", incoming);
+    return res.status(200).json({ in: "incoming" });
+  }
+
+  const { data: outgoing, error: erroroutgoing } = await supabase
+    .from("outgoing")
+    .select("track_id")
+    .eq("track_id", req.query.trackIdState);
+
+  if (erroroutgoing) {
+    console.error("error tracking fetching:", erroroutgoing);
+  }
+
+  if (outgoing[0]?.track_id) {
+    console.log("outgoing", outgoing);
+    return res.status(200).json({ in: "outgoing" });
+  }
+
+  const { data: released, error: errorreleased } = await supabase
+    .from("released")
+    .select("track_id")
+    .eq("track_id", req.query.trackIdState);
+
+  if (errorreleased) {
+    console.error("error tracking fetching:", errorreleased);
+  }
+
+  if (released[0]?.track_id) {
+    console.log("released", released);
+    return res.status(200).json({ in: "released" });
+  }
+
+  const { data: rejected, error: errorrejected } = await supabase
+    .from("rejected")
+    .select("track_id")
+    .eq("track_id", req.query.trackIdState);
+
+  if (errorrejected) {
+    console.error("error tracking fetching:", errorrejected);
+  }
+
+  if (rejected[0]?.track_id) {
+    console.log("rejected", rejected);
+    return res.status(200).json({ in: "rejected" });
+  }
+
+  return res.status(200).json(null);
 });
 
 // app.post("/save-image", upload.single("file"), async (req, res) => {
@@ -260,14 +369,24 @@ app.post("/deletefromincoming", async (req, res) => {
 
   const { data, error } = await supabaseForAuthenticated
     .from("incoming")
-    .delete()
-    .eq("id", id);
+    .delete({ returning: "representation" })
+    .eq("id", id)
+    .select("*");
 
   if (error) {
     console.log(JSON.stringify(error));
     return res.send("Error deleting data" + JSON.stringify(error));
   }
 
+  if (data) {
+    console.log("deleted data: ", data);
+
+    const { error } = await supabase.from("rejected").insert(data);
+
+    if (error) {
+      console.error("error inserting to reject: ", error);
+    }
+  }
   return res.send("Data deleted");
 });
 
@@ -399,12 +518,23 @@ app.post("/deletefromoutgoing", async (req, res) => {
 
   const { data, error } = await supabaseForAuthenticated
     .from("outgoing")
-    .delete()
-    .eq("id", id);
+    .delete({ returning: "representation" })
+    .eq("id", id)
+    .select("*");
 
   if (error) {
     console.log(JSON.stringify(error));
     return res.send("Error deleting data" + JSON.stringify(error));
+  }
+
+  if (data) {
+    console.log("deleted data: ", data);
+
+    const { error } = await supabase.from("rejected").insert(data);
+
+    if (error) {
+      console.error("error inserting to reject: ", error);
+    }
   }
 
   return res.send("Data deleted");

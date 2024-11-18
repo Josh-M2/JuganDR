@@ -29,7 +29,7 @@ export const ErrorImage = () => {
   return <img src={errorimage} alt="error" className="h-3 w-3 mr-1" />;
 };
 
-const FillUpBarangayClearance: React.FC = () => {
+const FillUpBarangayCertificate: React.FC = () => {
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -55,11 +55,12 @@ const FillUpBarangayClearance: React.FC = () => {
   const [isCountingDown, setIsCountingDown] = useState<boolean>(false);
 
   const [form, setForm] = useState<IndigencyForm>(() => {
-    const savedForm = localStorage.getItem("BarangayClearanceForm");
+    const savedForm = localStorage.getItem("BarangayCertificate");
+
     return savedForm
       ? JSON.parse(savedForm)
       : {
-          document: "Barangay Clearance",
+          document: "Barangay Certificate",
           first_name: "",
           middle_name: "",
           last_name: "",
@@ -80,7 +81,7 @@ const FillUpBarangayClearance: React.FC = () => {
 
   useEffect(() => {
     const { frontID, backID, ...formToSave } = form;
-    localStorage.setItem("BarangayClearanceForm", JSON.stringify(formToSave));
+    localStorage.setItem("BarangayCertificate", JSON.stringify(formToSave));
   }, [
     form.first_name,
     form.middle_name,
@@ -94,7 +95,6 @@ const FillUpBarangayClearance: React.FC = () => {
     form.ext_name,
     form.document,
   ]);
-
   const [error, setError] = useState<IndigencyForm>({
     document: "",
     first_name: "",
@@ -144,7 +144,6 @@ const FillUpBarangayClearance: React.FC = () => {
     const sanitizedTag = value.replace(/[^a-zA-Z0-9 ]/g, "");
     setForm({ ...form, [name]: sanitizedTag });
   };
-
   const handleButtonClickedBack = () => {
     clearFormData();
     window.history.back();
@@ -496,6 +495,7 @@ const FillUpBarangayClearance: React.FC = () => {
     }
     //localStorage.removeItem("indigencyForm");
   };
+
   useEffect(() => {
     if (isCountingDown && timeRemaining > 0) {
       const timer = setInterval(() => {
@@ -594,7 +594,7 @@ const FillUpBarangayClearance: React.FC = () => {
             <div className="space-y-12">
               <div className="border-b border-gray-900/10 pb-12">
                 <h2 className="text-base font-semibold leading-10 text-gray-900 mt-4 mb-4">
-                  Barangay Clearance
+                  Barangay Certificate
                 </h2>
                 <h2 className="text-base font-semibold leading-7 text-gray-900">
                   Personal Information
@@ -938,7 +938,7 @@ const FillUpBarangayClearance: React.FC = () => {
                       id="document"
                       name="document"
                       type="text"
-                      value="Barangay Clearance"
+                      value="Barangay Certificate"
                       readOnly
                       className={`hidden p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 `}
                     />
@@ -1074,7 +1074,7 @@ const FillUpBarangayClearance: React.FC = () => {
                   const confirm = handleConfirm();
                   confirm && onOpen();
                 }}
-                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Confirm
               </button>
@@ -1102,7 +1102,7 @@ const FillUpBarangayClearance: React.FC = () => {
                   <button
                     type="button"
                     onClick={onClose}
-                    className="text-sm font-semibold text-gray-900 py-2 px-4 rounded-md border hover:bg-slate-100"
+                    className="text-sm font-semibold text-gray-900 py-2 px-3 rounded-md border hover:bg-slate-100"
                     disabled={submitLoading}
                   >
                     Review
@@ -1129,10 +1129,10 @@ const FillUpBarangayClearance: React.FC = () => {
                         },
                       });
                     }}
-                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm bg-indigo-600hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                     disabled={submitLoading}
                   >
-                    {submitLoading ? "Submiting" : "Submit"}
+                    Submit
                   </button>
                 </ModalFooter>
               </ModalContent>
@@ -1204,4 +1204,4 @@ const FillUpBarangayClearance: React.FC = () => {
   );
 };
 
-export default FillUpBarangayClearance;
+export default FillUpBarangayCertificate;
