@@ -47,7 +47,7 @@ const Main: React.FC = () => {
             <p className="mt-3 text-center text-sm text-gray-500">
               Track your document{" "}
               <a
-                href="#"
+                href="/Track Document"
                 className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
               >
                 here

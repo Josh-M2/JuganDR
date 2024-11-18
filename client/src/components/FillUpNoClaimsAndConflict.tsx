@@ -14,6 +14,7 @@ import {
   useDisclosure,
   useToast,
   Image,
+  Select,
 } from "@chakra-ui/react";
 import errorimage from "src/assets/circle-exclamation-solid.svg";
 import React, { useEffect, useState } from "react";
@@ -22,37 +23,22 @@ import { useLocation, useNavigate } from "react-router-dom";
 import NavigationBar from "./NavigationBar";
 import { supabase } from "../config";
 import Footer from "./Footer";
-
-export interface IndigencyForm {
-  document: string;
-  first_name: string;
-  middle_name: string;
-  last_name: string;
-  ext_name: string;
-  age: string;
-  mobile_num: string;
-  // purpose: string;
-  // purpose_for: string;
-  // school: string;
-  street: string;
-  province: string;
-  barangay: string;
-  city: string;
-  frontID: string;
-  backID: string;
-}
+import { IndigencyForm } from "./FillUpIndigency";
 
 export const ErrorImage = () => {
   return <img src={errorimage} alt="error" className="h-3 w-3 mr-1" />;
 };
 
-const FillUpSedula: React.FC = () => {
+const FillUpNoClaimsAndConflict: React.FC = () => {
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
   const [frontIdObject, setFrontIdObject] = useState<File | null>(null);
   const [backIdObject, setBackIdObject] = useState<File | null>(null);
+  const [purokCertObject, setPurokCertObject] = useState<File | null>(null);
+
+  const [selectedPurpose, setSelectedPurpose] = useState("Employment");
 
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -69,12 +55,11 @@ const FillUpSedula: React.FC = () => {
   const [isCountingDown, setIsCountingDown] = useState<boolean>(false);
 
   const [form, setForm] = useState<IndigencyForm>(() => {
-    const savedForm = localStorage.getItem("sedulaForm");
-
+    const savedForm = localStorage.getItem("NoClaimsAndConflictForm");
     return savedForm
       ? JSON.parse(savedForm)
       : {
-          document: "Sedula",
+          document: "No Claims And Conflict",
           first_name: "",
           middle_name: "",
           last_name: "",
@@ -95,7 +80,7 @@ const FillUpSedula: React.FC = () => {
 
   useEffect(() => {
     const { frontID, backID, ...formToSave } = form;
-    localStorage.setItem("sedulaForm", JSON.stringify(formToSave));
+    localStorage.setItem("NoClaimsAndConflictForm", JSON.stringify(formToSave));
   }, [
     form.first_name,
     form.middle_name,
@@ -118,7 +103,7 @@ const FillUpSedula: React.FC = () => {
     ext_name: "",
     age: "",
     mobile_num: "",
-    // purpose: "",
+    purpose: "",
     // purpose_for: "",
     // school: "",
     street: "",
@@ -127,19 +112,20 @@ const FillUpSedula: React.FC = () => {
     city: "",
     frontID: "",
     backID: "",
+    purok_certificate: "",
   });
 
   const clearFormData = () => {
-    localStorage.removeItem("sedulaForm");
+    localStorage.removeItem("indigencyForm");
     setForm({
-      document: "Sedula",
+      document: "Barangay Indigency",
       first_name: "",
       middle_name: "",
       last_name: "",
       ext_name: "",
       age: "",
       mobile_num: "",
-      // purpose: "",
+      purpose: "",
       // purpose_for: "",
       // school: "",
       street: "",
@@ -148,6 +134,7 @@ const FillUpSedula: React.FC = () => {
       city: "",
       frontID: "",
       backID: "",
+      purok_certificate: "",
     });
   };
 
@@ -158,8 +145,9 @@ const FillUpSedula: React.FC = () => {
     const sanitizedTag = value.replace(/[^a-zA-Z0-9 ]/g, "");
     setForm({ ...form, [name]: sanitizedTag });
   };
+
   const handleButtonClickedBack = () => {
-    clearFormData()
+    clearFormData();
     window.history.back();
   };
 
@@ -214,14 +202,16 @@ const FillUpSedula: React.FC = () => {
     }
   };
 
-  // const validatepurpose = (name: string) => {
-  //   const nameRegex = /^[a-zA-Z\s]+$/;
-  //   const test = nameRegex.test(name);
-
-  //   if (!test) {
-  //     return "Invalid last name";
-  //   }
-  // };
+  const validatepurpose = (name: string) => {
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    const test = nameRegex.test(name);
+    if (!name) {
+      return "Must fill this field";
+    }
+    if (!test) {
+      return "Invalid last name";
+    }
+  };
 
   const validateschool = (name: string) => {
     const nameRegex = /^[a-zA-Z\s-]+$/;
@@ -284,6 +274,12 @@ const FillUpSedula: React.FC = () => {
     }
   };
 
+  const validatepurokCert = (name: string) => {
+    if (!name || !purokCertObject) {
+      return "Must fill this field";
+    }
+  };
+
   const handleConfirm = () => {
     setError({
       document: "",
@@ -293,7 +289,7 @@ const FillUpSedula: React.FC = () => {
       ext_name: "",
       age: "",
       mobile_num: "",
-      // purpose: "",
+      purpose: "",
       // purpose_for: "",
       // school: "",
       street: "",
@@ -302,13 +298,14 @@ const FillUpSedula: React.FC = () => {
       city: "",
       frontID: "",
       backID: "",
+      purok_certificate: "",
     });
     const first_nameError = validatefirst_name(form.first_name);
     const middle_nameError = validatemiddle_name(form.middle_name);
     const last_nameError = validatelast_name(form.last_name);
     const ageError = validateage(form.age);
     const mobile_numError = validatemobile_num(form.mobile_num);
-    // const purposeError = validatepurpose(form.purpose);
+    const purposeError = validatepurpose(form.purpose);
     // const schoolError = validateschool(form.school);
     const streetError = validatestreet(form.street);
     const provinceError = validateprovince(form.province);
@@ -316,10 +313,11 @@ const FillUpSedula: React.FC = () => {
     const cityError = validatecity(form.city);
     let frontIDError = validateFrontID(form.frontID);
     let backIDError = validateBackID(form.backID);
-
+    let purokCertError = validatepurokCert(form.purok_certificate);
     if (isAuthenticated) {
       frontIDError = "";
       backIDError = "";
+      purokCertError = "";
     }
 
     if (
@@ -328,6 +326,7 @@ const FillUpSedula: React.FC = () => {
       last_nameError ||
       ageError ||
       mobile_numError ||
+      purposeError ||
       // schoolError ||
       streetError ||
       provinceError ||
@@ -343,7 +342,7 @@ const FillUpSedula: React.FC = () => {
         ext_name: "",
         age: ageError || "",
         mobile_num: mobile_numError || "",
-        // purpose: "",
+        purpose: purposeError || "",
         // purpose_for: "",
         // school: schoolError || "",
         street: streetError || "",
@@ -352,6 +351,7 @@ const FillUpSedula: React.FC = () => {
         city: cityError || "",
         frontID: frontIDError || "",
         backID: backIDError || "",
+        purok_certificate: purokCertError || "",
       });
       return false;
     } else {
@@ -363,7 +363,7 @@ const FillUpSedula: React.FC = () => {
         ext_name: "",
         age: "",
         mobile_num: "",
-        // purpose: "",
+        purpose: "",
         // purpose_for: "",
         // school: "",
         street: "",
@@ -372,12 +372,12 @@ const FillUpSedula: React.FC = () => {
         city: "",
         frontID: "",
         backID: "",
+        purok_certificate: "",
       });
 
       return true;
     }
   };
-
   const uploadFile = async (file: File, path: string) => {
     const urlEnv = process.env.REACT_APP_SERVER_ACCESS;
 
@@ -397,6 +397,18 @@ const FillUpSedula: React.FC = () => {
     return null;
   };
 
+  const createTrackingID = async (encodedValue: any) => {
+    console.log("createTrackingID", encodedValue);
+    // Step 1: Decode the URL-encoded string
+    const decodedValue = decodeURIComponent(encodedValue);
+
+    // Step 2: Format it to remove special characters like ":" and "."
+    const trackingID = decodedValue.replace(/[-:.TZ]/g, "");
+
+    // Return the cleaned-up tracking ID
+    return trackingID;
+  };
+
   const exceeded = localStorage.getItem("exceeded");
   const handleSubmit = async () => {
     if (exceeded !== null) {
@@ -412,6 +424,7 @@ const FillUpSedula: React.FC = () => {
     try {
       let frontIDPath = null;
       let backIDPath = null;
+      let purokCert = null;
 
       // Upload files to Supabase Storage
       if (!exceeded) {
@@ -431,27 +444,48 @@ const FillUpSedula: React.FC = () => {
           backIDPath = backIDResponse?.path; // Use the path for further processing
         }
 
+        if (purokCertObject) {
+          const purokCertResponse = await uploadFile(
+            purokCertObject,
+            `uploads/purokCert-${Date.now()}.png`
+          );
+          purokCert = purokCertResponse?.path; // Use the path for further processing
+        }
+
         const response = await axios.post(`${urlEnv}incoming_request`, {
           ...form,
           frontID: frontIDPath,
           backID: backIDPath,
+          purok_certificate: purokCert,
           isAuthenticated: isAuthenticated,
         });
         console.log("response", response);
         if (response.data) {
-          onClose();
+          console.log("response.data", response.data.requested_at);
+          const trackID = await createTrackingID(response.data.requested_at);
+          const track = await axios.post(`${urlEnv}save-tracking-id`, {
+            tracking_id: trackID,
+            id: response.data.id,
+          });
 
-          clearFormData();
-          if (isAuthenticated) {
-            navigate("/Selection of Documents");
-          } else {
-            navigate("/Selection of Documents/?success=true");
+          if (track.data) {
+            onClose();
+            clearFormData();
+            if (isAuthenticated) {
+              navigate("/Selection of Documents");
+            } else {
+              console.log("track_id", track.data.track_id);
+              navigate(
+                `/Track Document/?success=true&trackid=${track.data.track_id}`
+              );
+            }
           }
+
           localStorage.removeItem("exceeded");
         }
       }
     } catch (error: any) {
-      console.error("Error submitting form", error.response);
+      console.error("Error submitting form", error);
       if (error.response?.data?.errorAttempt) {
         openModalAlert3();
         onClose();
@@ -523,6 +557,37 @@ const FillUpSedula: React.FC = () => {
     }
   };
 
+  const handlePurokCertificate = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setPurokCertObject(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm((prevForm) => ({
+          ...prevForm,
+          purok_certificate: reader.result as string, // Save base64 or URL string
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedPurpose !== "Others") {
+      setForm((prev) => ({
+        ...prev,
+        purpose: selectedPurpose,
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        purpose: "",
+      }));
+    }
+  }, [selectedPurpose]);
+
   return (
     <>
       {isAuthenticated ? <NavigationBar /> : ""}
@@ -532,7 +597,7 @@ const FillUpSedula: React.FC = () => {
             <div className="space-y-12">
               <div className="border-b border-gray-900/10 pb-12">
                 <h2 className="text-base font-semibold leading-10 text-gray-900 mt-4 mb-4">
-                  Sedula
+                  No Claims And Conflict
                 </h2>
                 <h2 className="text-base font-semibold leading-7 text-gray-900">
                   Personal Information
@@ -714,6 +779,56 @@ const FillUpSedula: React.FC = () => {
                       )}
                     </div>
                   </div>
+                  <div className="sm:col-span-3">
+                    <label
+                      htmlFor="mobile_num"
+                      className="block text-sm font-medium leading-6 text-gray-900"
+                    >
+                      Purpose:
+                    </label>
+
+                    <Select
+                      id="purpose"
+                      name="purpose"
+                      width="auto"
+                      onChange={(e) => setSelectedPurpose(e.target.value)}
+                      value={selectedPurpose}
+                    >
+                      <option value="Employment">Employment</option>
+                      <option value="Loan">Loan</option>
+                      <option value="Scholarship">Scholarship</option>
+                      <option value="Laboratory">Laboratory</option>
+                      <option value="Medical">Medical</option>
+                      <option value="Others">Others..</option>
+                    </Select>
+                  </div>
+                  {selectedPurpose === "Others" && (
+                    <div className="sm:col-span-3">
+                      <label
+                        htmlFor="mobile_num"
+                        className="block text-sm font-medium leading-6 text-gray-900"
+                      >
+                        Please specify the purpose
+                      </label>
+
+                      <Input
+                        id="purpose"
+                        name="purpose"
+                        value={form.purpose}
+                        onChange={handleChange}
+                        type="text"
+                        className={` ${
+                          error.purpose ? "!border-2 !border-rose-600" : ""
+                        }`}
+                      />
+                      {error.purpose && (
+                        <label className="flex items-center mt-1 text-rose-600">
+                          <ErrorImage />
+                          {error.purpose}
+                        </label>
+                      )}
+                    </div>
+                  )}
                   {/* here paste 1 */}
                   <div className="sm:col-span-2 sm:col-start-1">
                     <label
@@ -826,14 +941,14 @@ const FillUpSedula: React.FC = () => {
                       id="document"
                       name="document"
                       type="text"
-                      value="Sedula"
+                      value="No Claims And Conflict"
                       readOnly
                       className={`hidden p-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 `}
                     />
                   </div>
                   <div className="sm:col-span-2">
                     <label
-                      htmlFor="first_name"
+                      htmlFor="front"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
                       Front image of valid ID
@@ -845,6 +960,7 @@ const FillUpSedula: React.FC = () => {
                       <Input
                         type="file"
                         accept="image/*"
+                        name="front"
                         //value={form.frontID}
                         onChange={handleFrontIDChange}
                         className={`file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 ${
@@ -869,7 +985,7 @@ const FillUpSedula: React.FC = () => {
                   </div>
                   <div className="sm:col-span-2">
                     <label
-                      htmlFor="middle_name"
+                      htmlFor="back"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
                       Back image of valid ID
@@ -881,6 +997,7 @@ const FillUpSedula: React.FC = () => {
                       <Input
                         type="file"
                         accept="image/*"
+                        name="back"
                         //value={form.backID}
                         onChange={handleBackIDChange}
                         className={`file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 ${
@@ -897,6 +1014,44 @@ const FillUpSedula: React.FC = () => {
                       {form.backID && backIdObject && (
                         <Image
                           src={form.backID}
+                          alt="Second Image Preview"
+                          className="rounded-lg shadow-md my-1"
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="purokcert"
+                      className="block text-sm font-medium leading-6 text-gray-900"
+                    >
+                      Purok Certificate
+                    </label>
+                    <span className="text-sm">
+                      Make sure the image is clear and can be read
+                    </span>
+                    <div className="mt-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        name="purokcert"
+                        onChange={handlePurokCertificate}
+                        className={`file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 ${
+                          error.purok_certificate
+                            ? "!border-2 !border-rose-600"
+                            : ""
+                        }`}
+                        style={{ padding: "1px 0" }}
+                      />
+                      {error.purok_certificate && (
+                        <label className="flex items-center mt-1 text-rose-600">
+                          <ErrorImage />
+                          {error.purok_certificate}
+                        </label>
+                      )}
+                      {form.purok_certificate && purokCertObject && (
+                        <Image
+                          src={form.purok_certificate}
                           alt="Second Image Preview"
                           className="rounded-lg shadow-md my-1"
                         />
@@ -922,7 +1077,7 @@ const FillUpSedula: React.FC = () => {
                   const confirm = handleConfirm();
                   confirm && onOpen();
                 }}
-                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Confirm
               </button>
@@ -957,30 +1112,31 @@ const FillUpSedula: React.FC = () => {
                   </button>
                   <button
                     type="submit"
+                    disabled={submitLoading}
                     onClick={(e) => {
                       e.preventDefault();
                       const examplePromise = handleSubmit();
                       // onClose();
-
-                      toast.promise(examplePromise, {
-                        success: {
-                          title: "Sent",
-                          description: "Document request sent",
-                        },
-                        error: {
-                          title: "rejected",
-                          description: "Something wrong",
-                        },
-                        loading: {
-                          title: "Preparing",
-                          description: "Please wait",
-                        },
-                      });
+                      if (exceeded === null) {
+                        toast.promise(examplePromise, {
+                          success: {
+                            title: "Sent",
+                            description: "Document request sent",
+                          },
+                          error: {
+                            title: "Rejected",
+                            description: "Something went wrong",
+                          },
+                          loading: {
+                            title: "Preparing",
+                            description: "Please wait",
+                          },
+                        });
+                      }
                     }}
-                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    disabled={submitLoading}
+                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                   >
-                    Submit
+                    {submitLoading ? "Submiting" : "Submit"}
                   </button>
                 </ModalFooter>
               </ModalContent>
@@ -1052,4 +1208,4 @@ const FillUpSedula: React.FC = () => {
   );
 };
 
-export default FillUpSedula;
+export default FillUpNoClaimsAndConflict;

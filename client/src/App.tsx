@@ -6,12 +6,18 @@ import { ChakraProvider } from "@chakra-ui/react";
 import DocumentSelection from "./components/DocumentSelection";
 import Login from "./components/Login";
 import Main from "./components/Main";
-import FillUpIndigency from "./components/FillUpIndigency";
-import FillUpSedula from "./components/FillUpSedula";
-import FillUpBarangayClearance from "./components/FillUpBarangayClearance";
 import AdminDashboard from "./components/AdminDashBoard";
-import ChangePassword from "./components/ChangePassword";
 import EmailForChangePassword from "./components/EmailForChangePassword";
+import ChangePassword from "./components/ChangePassword";
+
+import FillUpIndigency from "./components/FillUpIndigency";
+import FillUpBarangayCertificate from "./components/FillUpBarangayCertificate";
+import FillUpBarangayClearance from "./components/FillUpBarangayClearance";
+import FillUpSeniorCitizenCertificate from "./components/FillUpSeniorCitizenCertificate";
+import FillUpBarangayBusinessPermit from "./components/FillUpBarangayBusinessPermit";
+import FillUpNoClaimsAndConflict from "./components/FillUpNoClaimsAndConflict";
+import FillUpBarangayResidency from "./components/FillUpBarangayResidency";
+import TrackDocument from "./components/TrackDocument";
 
 function App() {
   return (
@@ -25,11 +31,31 @@ function App() {
           <Route path="/Sign in for Admin" element={<Login />} />
           <Route path="/" element={<Main />} />
           <Route path="/Barangay Indigency" element={<FillUpIndigency />} />
-          <Route path="/Sedula" element={<FillUpSedula />} />
+          <Route
+            path="/Barangay Certificate"
+            element={<FillUpBarangayCertificate />}
+          />
           <Route
             path="/Barangay Clearance"
             element={<FillUpBarangayClearance />}
           />
+          <Route
+            path="/Senior Citizen Certificate"
+            element={<FillUpSeniorCitizenCertificate />}
+          />
+          <Route
+            path="/Barangay Business Permit"
+            element={<FillUpBarangayBusinessPermit />}
+          />
+          <Route
+            path="/No Claims And Conflict"
+            element={<FillUpNoClaimsAndConflict />}
+          />
+          <Route
+            path="/Barangay Residency"
+            element={<FillUpBarangayResidency />}
+          />
+          <Route path="/Track Document" element={<TrackDocument />} />
           <Route path="/Admin Dashboard" element={<AdminDashboard />} />
           <Route path="/reset-password" element={<ChangePassword />} />
           {/* <Route
