@@ -788,9 +788,8 @@ app.post("/change-password", async (req, res) => {
     });
 
     if (errorUpdatePassword) {
-      return res
-        .status(500)
-        .json({ error: "Failed to update password. Please try again later." });
+      console.error("errorUpdatePassword: ", errorUpdatePassword);
+      return res.status(200).json({ message: errorUpdatePassword });
     }
   } catch (error) {
     console.error("internal error change-password", error);
