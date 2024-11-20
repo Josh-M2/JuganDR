@@ -2882,9 +2882,21 @@ const AdminDashboard: React.FC = () => {
               >
                 <option value="All">All</option>
                 <option value="Barangay Indigency">Barangay Indigency</option>
-                <option value="Sedula">Sedula</option>
+                <option value="Barangay Certificate">
+                  Barangay Certificate
+                </option>
                 <option value="Barangay Clearance">Barangay Clearance</option>
-                <option value="test">test loader</option>
+                <option value="Senior Citizen Certificate">
+                  Senior Citizen Certificate
+                </option>
+                <option value="Barangay Business Permit">
+                  Barangay Business Permit
+                </option>
+                <option value="Barangay Residency">Barangay Residency</option>
+
+                <option value="No Claims And Conflict">
+                  No Claims And Conflict
+                </option>
               </Select>
             </div>
             {activeTab === 2 && (
