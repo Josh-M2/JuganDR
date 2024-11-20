@@ -41,6 +41,7 @@ const ChangePassword: React.FC = () => {
     newPassword: "",
     confirmNewPassword: "",
   });
+  const [mainError, setMainError] = useState("");
   const [isModalOpen1, setIsModalOpen1] = useState(false);
   const openModalAlert1 = () => setIsModalOpen1(true);
   const closeModalAlert1 = async () => {
@@ -115,6 +116,7 @@ const ChangePassword: React.FC = () => {
         },
         { withCredentials: true }
       );
+      console.log("response.data.message", response.data.message);
       if (!response.data) {
         openModalAlert1();
       } else if (response.data.message === "invalid_credentials") {
@@ -122,6 +124,8 @@ const ChangePassword: React.FC = () => {
           ...prevData,
           currentPassword: "Wrong current password",
         }));
+      } else if (response.data.message.code === "same_password") {
+        setMainError("New password should be different from the old password.");
       } else if (response.data.message === "Succesfull") {
         openModalAlert2();
       }
@@ -158,6 +162,12 @@ const ChangePassword: React.FC = () => {
 
           <div className="sm:mx-auto sm:w-full sm:max-w-sm">
             <form onSubmit={handlePasswordChange}>
+              {mainError && (
+                <label className="text-[rgb(218,44,44)] text-[13px] mt-[5px] flex items-center">
+                  <ErrorImage />
+                  {mainError}
+                </label>
+              )}
               {/* Current Password */}
               <div className="mt-1">
                 <label
