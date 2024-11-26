@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import juganlogo from "./../assets/Jugan-logo.png";
 import check from "./../assets/check.svg";
 import dropdown from "./../assets/chevron-down.svg";
@@ -22,7 +22,9 @@ import {
   ModalHeader,
   ModalOverlay,
 } from "@chakra-ui/react";
+import axios from "axios";
 
+const urlEnv = process.env.REACT_APP_SERVER_ACCESS || "";
 const documents = [
   {
     id: 1,
@@ -90,6 +92,25 @@ const DocumentSelection: React.FC = () => {
   //   }
   // }, []);
 
+  const hasInit = useRef(false);
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const response = await axios.get(`${urlEnv}initialize`, {
+          withCredentials: true,
+        });
+
+        if (response.data) {
+          console.log("Initialization complete:", response.data);
+        }
+      } catch (error: any) {
+        console.error("error init: ", error);
+      }
+    };
+
+    init();
+  }, []);
+
   const handleButtonClicked = () => {
     switch (selectedDocs.id) {
       case 1:
@@ -119,6 +140,7 @@ const DocumentSelection: React.FC = () => {
   };
 
   console.log("selectedDocs", selectedDocs);
+
   return (
     <>
       {isAuthenticated ? <NavigationBar /> : ""}
@@ -256,5 +278,4 @@ const DocumentSelection: React.FC = () => {
     </>
   );
 };
-
 export default DocumentSelection;
