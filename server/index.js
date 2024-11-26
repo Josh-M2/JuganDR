@@ -165,9 +165,20 @@ app.get("/get-images", async (req, res) => {
 
 const incoming_requestRateLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100,
+  max: 100, // Allow a maximum of 100 requests per minute per token
+  keyGenerator: (req) => {
+    // Use the rate limit token from the request's cookie or header
+    const rateLimitToken =
+      req.cookies.rate_limit_token || req.headers["x-rate-limit-token"];
+
+    // Ensure the token exists, if not, return null (this will block the request)
+    if (!rateLimitToken) {
+      return null;
+    }
+    return rateLimitToken; // Token is used as the unique identifier for rate limiting
+  },
   message: {
-    errorAttempt: "Too many requests from this IP, please try again later.",
+    errorAttempt: "Too many requests, please try again later.",
   },
 });
 
@@ -221,8 +232,7 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
   if (!numberPattern.test(age) || age < 1 || age > 120)
     errors.age = "Age must be a valid number between 1 and 120";
 
-  if (!namePattern.test(purpose))
-    errors.purpose = "Invalid last purpose format";
+  if (!namePattern.test(purpose)) errors.purpose = "Invalid purpose format";
 
   if (!phonePattern.test(mobile_num))
     errors.mobile_num = "Mobile number must be 10-15 digits";
