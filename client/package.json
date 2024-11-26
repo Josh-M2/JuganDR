@@ -33,8 +33,8 @@
   },
   "scripts": {
     "local": "react-dotenv && react-scripts start",
-    "start": "react-dotenv && craco start",
-    "build": "react-dotenv && craco build",
+    "start": "craco start",
+    "build": "craco build",
     "test": "craco test",
     "eject": "react-scripts eject"
   },
