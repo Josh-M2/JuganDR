@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@express-rate-limit/tsconfig": "^1.0.2",
     "@supabase/supabase-js": "^2.45.4",
     "@types/express": "^5.0.0",
     "@types/node": "^22.7.4",
