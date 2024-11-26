@@ -25,6 +25,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import juganlogo from "./../assets/Jugan-logo.png";
 import Footer from "./Footer";
 import axios from "axios";
+import { supabase } from "../config";
 const urlEnv = process.env.REACT_APP_SERVER_ACCESS || "";
 
 const TrackDocument: React.FC = () => {
@@ -210,7 +211,29 @@ const TrackDocument: React.FC = () => {
             height="300px"
             className="responsive-stepper"
           >
-            <LoaderRing />
+            {/* <LoaderRing /> */}
+            {filteredSteps.length > 0 ? (
+              filteredSteps.map((step, index) => (
+                <Step key={index}>
+                  <StepIndicator>
+                    <StepStatus
+                      complete={<StepIcon />}
+                      incomplete={<StepNumber />}
+                      active={<StepNumber />}
+                    />
+                  </StepIndicator>
+
+                  <Box flexShrink="0">
+                    <StepTitle>{step.title}</StepTitle>
+                    <StepDescription>{step.description}</StepDescription>
+                  </Box>
+
+                  <StepSeparator />
+                </Step>
+              ))
+            ) : (
+              <p>No data </p>
+            )}
           </Stepper>
         ) : (
           <Stepper

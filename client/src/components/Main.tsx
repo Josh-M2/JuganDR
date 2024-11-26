@@ -1,13 +1,32 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import juganlogo from "./../assets/Jugan-logo.png";
 
 import { useNavigate } from "react-router-dom";
 import Logout from "./Logout";
 import NavigationBar from "./NavigationBar";
-
+import axios from "axios";
+const urlEnv = process.env.REACT_APP_SERVER_ACCESS || "";
 const Main: React.FC = () => {
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
   const navigate = useNavigate();
+  const hasInit = useRef(false);
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const response = await axios.get(`${urlEnv}initialize`, {
+          withCredentials: true,
+        });
+
+        if (response.data) {
+          console.log("Initialization complete:", response.data);
+        }
+      } catch (error: any) {
+        console.error("error init: ", error);
+      }
+    };
+
+    init();
+  }, []);
   return (
     <>
       {isAuthenticated ? <NavigationBar /> : ""}

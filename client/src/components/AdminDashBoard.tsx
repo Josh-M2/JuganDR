@@ -96,6 +96,7 @@ interface data {
   front_id: string;
   back_id: string;
   purok_certificate: string;
+  track_id: string;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -1171,7 +1172,7 @@ const AdminDashboard: React.FC = () => {
     } catch (err: any) {
       console.error(`error sending to outgoing: ${err.message}`);
     }
-    setLoadingSendToOutgoing(true);
+    setLoadingSendToOutgoing(false);
   };
 
   const sendToReleased = async (data: any) => {
@@ -2961,10 +2962,10 @@ const AdminDashboard: React.FC = () => {
           >
             <TabList className="justify-evenly">
               <Tab className="w-[374.53px]" onClick={handleIncomingClick}>
-                Incoming
+                Review
               </Tab>
               <Tab className="w-[374.53px]" onClick={handleOutgoingClick}>
-                Outgoing
+                To Release
               </Tab>
               <Tab className="w-[374.53px]" onClick={handleReleasedClick}>
                 Released
@@ -3492,9 +3493,13 @@ const AdminDashboard: React.FC = () => {
                     <form onSubmit={handleSubmit}>
                       <div className="space-y-12">
                         <div className="border-b border-gray-900/10 ">
-                          <h2 className="text-base font-semibold leading-10 text-gray-900 mt-4 mb-4">
+                          <h2 className="text-base font-semibold leading-10 text-gray-900 mt-4 mb-1">
+                            Tracking #: {selectedData?.track_id}
+                          </h2>
+                          <h2 className="text-base font-semibold leading-10 text-gray-900 mt-1 mb-4">
                             {selectedData?.document}
                           </h2>
+
                           <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 h-[65vh] overflow-auto">
                             <div className="sm:col-span-3">
                               <label

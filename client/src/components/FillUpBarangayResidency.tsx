@@ -50,6 +50,13 @@ const FillUpBarangayResidency: React.FC = () => {
   const openModalAlert4 = () => setIsModalOpen4(true);
   const closeModalAlert4 = () => setIsModalOpen4(false);
 
+  const [isModalOpen5, setIsModalOpen5] = useState(false);
+  const openModalAlert5 = () => setIsModalOpen5(true);
+  const closeModalAlert5 = () => {
+    setIsModalOpen5(false);
+    window.location.href = "/";
+  };
+
   const countdownDuration = 1 * 60;
   const [timeRemaining, setTimeRemaining] = useState<number>(countdownDuration);
   const [isCountingDown, setIsCountingDown] = useState<boolean>(false);
@@ -116,7 +123,7 @@ const FillUpBarangayResidency: React.FC = () => {
   });
 
   const clearFormData = () => {
-    localStorage.removeItem("indigencyForm");
+    localStorage.removeItem("BarangayResidencyForm");
     setForm({
       document: "Barangay Indigency",
       first_name: "",
@@ -422,6 +429,21 @@ const FillUpBarangayResidency: React.FC = () => {
     const urlEnv = process.env.REACT_APP_SERVER_ACCESS;
 
     try {
+      const response = await axios.get(`${urlEnv}validate-token`, {
+        withCredentials: true,
+      });
+      if (!response?.data?.is_valid_token) {
+        console.log("invalid token");
+        onClose();
+        openModalAlert5();
+        setSubmitLoading(false);
+        return Promise.reject(new Error("Invalid Token"));
+      }
+    } catch (error: any) {
+      console.error("error validation token: ", error);
+    }
+
+    try {
       let frontIDPath = null;
       let backIDPath = null;
       let purokCert = null;
@@ -452,13 +474,17 @@ const FillUpBarangayResidency: React.FC = () => {
           purokCert = purokCertResponse?.path; // Use the path for further processing
         }
 
-        const response = await axios.post(`${urlEnv}incoming_request`, {
-          ...form,
-          frontID: frontIDPath,
-          backID: backIDPath,
-          purok_certificate: purokCert,
-          isAuthenticated: isAuthenticated,
-        });
+        const response = await axios.post(
+          `${urlEnv}incoming_request`,
+          {
+            ...form,
+            frontID: frontIDPath,
+            backID: backIDPath,
+            purok_certificate: purokCert,
+            isAuthenticated: isAuthenticated,
+          },
+          { withCredentials: true }
+        );
         console.log("response", response);
         if (response.data) {
           console.log("response.data", response.data.requested_at);
@@ -496,7 +522,7 @@ const FillUpBarangayResidency: React.FC = () => {
       setSubmitLoading(false);
       return Promise.reject(error);
     }
-    //localStorage.removeItem("indigencyForm");
+    //localStorage.removeItem("BarangayBusinessPermitForm");
   };
   useEffect(() => {
     if (isCountingDown && timeRemaining > 0) {
@@ -610,7 +636,7 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="first_name"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      First name
+                      First name <span className="text-rose-600">*</span>
                     </label>
                     <div className="mt-2">
                       <Input
@@ -636,7 +662,7 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="middle_name"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Middle name
+                      Middle name <span className="text-rose-600">*</span>
                     </label>
                     <div className="mt-2">
                       <Input
@@ -662,7 +688,7 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="last_name"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Last name
+                      Last name <span className="text-rose-600">*</span>
                     </label>
                     <div className="mt-2">
                       <Input
@@ -715,7 +741,7 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="age"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Age
+                      Age <span className="text-rose-600">*</span>
                     </label>
                     <div className="mt-2">
                       <Input
@@ -741,7 +767,7 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="mobile_num"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Mobile Number
+                      Mobile number <span className="text-rose-600">*</span>
                     </label>
                     <div className="mt-2">
                       <Stack spacing={1}>
@@ -782,7 +808,7 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="mobile_num"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Purpose:
+                      Purpose <span className="text-rose-600">*</span>
                     </label>
 
                     <Select
@@ -806,7 +832,8 @@ const FillUpBarangayResidency: React.FC = () => {
                         htmlFor="mobile_num"
                         className="block text-sm font-medium leading-6 text-gray-900"
                       >
-                        Please specify the purpose
+                        Please specify the purpose{" "}
+                        <span className="text-rose-600">*</span>
                       </label>
 
                       <Input
@@ -833,7 +860,7 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="street"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Purok / Street
+                      Purok / Street <span className="text-rose-600">*</span>
                     </label>
                     <div className="mt-2">
                       <Input
@@ -860,7 +887,7 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="barangay"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Barangay
+                      Barangay <span className="text-rose-600">*</span>
                     </label>
                     <div className="mt-2">
                       <Input
@@ -887,7 +914,7 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="province"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      State / Province
+                      State / Province <span className="text-rose-600">*</span>
                     </label>
                     <div className="mt-2">
                       <Input
@@ -914,7 +941,7 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="city"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      City
+                      City <span className="text-rose-600">*</span>
                     </label>
                     <div className="mt-2">
                       <Input
@@ -949,7 +976,11 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="front"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Front image of valid ID
+                      Front image of valid ID  {isAuthenticated ? (
+                        ""
+                      ) : (
+                        <span className="text-rose-600">*</span>
+                      )}
                     </label>
                     <span className="text-sm">
                       Make sure the image is clear and can be read
@@ -986,7 +1017,11 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="back"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Back image of valid ID
+                      Back image of valid ID  {isAuthenticated ? (
+                        ""
+                      ) : (
+                        <span className="text-rose-600">*</span>
+                      )}
                     </label>
                     <span className="text-sm">
                       Make sure the image is clear and can be read
@@ -1023,7 +1058,11 @@ const FillUpBarangayResidency: React.FC = () => {
                       htmlFor="purokcert"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Purok Certificate
+                      Purok Certificate  {isAuthenticated ? (
+                        ""
+                      ) : (
+                        <span className="text-rose-600">*</span>
+                      )}
                     </label>
                     <span className="text-sm">
                       Make sure the image is clear and can be read
@@ -1198,6 +1237,33 @@ const FillUpBarangayResidency: React.FC = () => {
               className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               Confirm
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal onClose={closeModalAlert5} isOpen={isModalOpen5} isCentered>
+        <ModalOverlay />
+        <ModalContent
+          style={{
+            marginLeft: "0.75rem",
+            marginRight: "0.75rem",
+          }}
+        >
+          <ModalHeader>Invalid Request</ModalHeader>
+          <ModalCloseButton onClick={closeModalAlert5} />
+          <ModalBody>
+            Please close this alert to refresh. Dont worry your progress wont
+            disappear
+          </ModalBody>
+          <ModalFooter className="gap-x-4">
+            <button
+              onClick={() => {
+                closeModalAlert5();
+              }}
+              className="text-sm font-semibold bg-indigo-600 leading-6 text-slate-50 py-2 px-4 rounded-xl hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              Okay
             </button>
           </ModalFooter>
         </ModalContent>
