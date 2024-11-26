@@ -8,10 +8,12 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 config();
+const isProduction = process.env.DEVELOPMENT === "PRODUCTION";
 const supabaseUrlWss = process.env.SUPABASE_URL_WSS;
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
+
 // console.log("supabaseUrlWss", supabaseUrlWss);
 
 const app = express();
@@ -45,8 +47,39 @@ app.use(
   })
 );
 
+app.set("trust proxy", 1);
+
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
+});
+
+app.get("/initialize", (req, res) => {
+  const rateLimitToken = req.cookies.rate_limit_token;
+
+  if (!rateLimitToken) {
+    const secretRateLimitToken = process.env.REACT_APP_PUBLIC_TOKEN;
+
+    res.cookie("rate_limit_token", secretRateLimitToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+
+    console.log("Rate limit token issued from initialize endpoint.");
+  }
+
+  res.json({ success: true });
+});
+
+app.get("/validate-token", async (req, res) => {
+  const rateLimitToken = req.cookies.rate_limit_token;
+  const secretRateLimitToken = process.env.REACT_APP_PUBLIC_TOKEN;
+
+  if (!rateLimitToken || rateLimitToken !== secretRateLimitToken) {
+    return res.status(200).json({ is_valid_token: false });
+  } else {
+    return res.status(200).json({ is_valid_token: true });
+  }
 });
 
 app.get("/test", (req, res) => {
@@ -140,6 +173,13 @@ const incoming_requestRateLimiter = rateLimit({
 
 app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
   console.log("incoming request", req.body);
+  const secretRateLimitToken = process.env.REACT_APP_PUBLIC_TOKEN;
+
+  const rateLimitToken = req.cookies.rate_limit_token;
+
+  if (!rateLimitToken || rateLimitToken !== secretRateLimitToken) {
+    return res.status(401).json({ error: "invalid token" });
+  }
 
   const {
     document,
@@ -714,7 +754,6 @@ const loginRateLimiter = rateLimit({
 });
 
 app.post("/login", loginRateLimiter, async (req, res) => {
-  const isProduction = process.env.DEVELOPMENT === "PRODUCTION";
   const { email, password, rememberMe } = req.body;
 
   try {
