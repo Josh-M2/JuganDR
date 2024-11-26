@@ -7,6 +7,13 @@ import reportWebVitals from "./reportWebVitals";
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
+
+if (process.env.NODE_ENV === "production") {
+  console.log = function () {};
+  console.info = function () {};
+  console.warn = function () {};
+  console.error = function () {};
+}
 root.render(
   <React.StrictMode>
     <App />
