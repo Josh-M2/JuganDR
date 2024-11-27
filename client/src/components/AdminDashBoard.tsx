@@ -707,7 +707,8 @@ const AdminDashboard: React.FC = () => {
         (item: data) =>
           item.first_name.toLowerCase().includes(searchLower) ||
           item.middle_name.toLowerCase().includes(searchLower) ||
-          item.last_name.toLowerCase().includes(searchLower)
+          item.last_name.toLowerCase().includes(searchLower) ||
+          item.track_id.toLowerCase().includes(searchLower)
       );
     }
 
@@ -930,11 +931,6 @@ const AdminDashboard: React.FC = () => {
   const fetchIncomingData = async () => {
     setLoadingIncoming(true);
     try {
-      // const response = await axios.get(`${urlEnv}fetchincoming`, {
-      //   withCredentials: true,
-      // });
-      // processAndSetIncomingData(response.data);
-      // setLoadingIncoming(false);
       const { data, error } = await supabase.from("incoming").select("*");
       console.log("incomingyawa", data);
       processAndSetIncomingData(data);
@@ -1028,57 +1024,6 @@ const AdminDashboard: React.FC = () => {
     itemsPerPage,
   ]);
 
-  // const fetchIncoming = async () => {
-  //   setLoadingIncoming(true);
-  //   console.log(`${urlEnv}fetchincoming`);
-  //   try {
-  //     const response = await axios.get(
-  //       `${urlEnv}fetchincoming`,
-  //       { withCredentials: true }
-  //     );
-  //     if (response.data) {
-  //       let filteredData = response.data;
-
-  //       if (selectedFilter !== "All") {
-  //         filteredData = response.data.filter(
-  //           (item: data) => item.document === selectedFilter
-  //         );
-  //       }
-
-  //       if (nameSearch.trim() !== "") {
-  //         const searchLower = nameSearch.trim().toLowerCase();
-
-  //         filteredData = filteredData.filter(
-  //           (item: data) =>
-  //             item.first_name.toLowerCase().includes(searchLower) ||
-  //             item.middle_name.toLowerCase().includes(searchLower) ||
-  //             item.last_name.toLowerCase().includes(searchLower)
-  //         );
-  //       }
-
-  //       setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
-  //       setCurrentPageIncomingData(
-  //         filteredData
-  //           .sort((a: { id: number }, b: { id: number }) => a.id - b.id) // Sorting by id in ascending order
-  //           .slice(startIndex, startIndex + itemsPerPage)
-  //       );
-
-  //       setDataIncoming(filteredData);
-  //       setLoadingIncoming(false);
-  //     }
-  //   } catch (err: any) {
-  //     //logout function here if JWT expires
-  //     console.log(`Error fetching data: ${err}`);
-  //     if (err.response.status == 404) {
-  //       setLoadingIncoming(false);
-  //       setDataIncoming([]);
-  //     } else if (err.response.status === 401) {
-  //       setLoadingIncoming(false);
-  //       openModalAlert1();
-  //     }
-  //   }
-  // };
-
   const deleteFromIncoming = async (id: number) => {
     console.log("deleteFromIncoming", id);
     setLoadingDeleteIncoming(true);
@@ -1109,58 +1054,65 @@ const AdminDashboard: React.FC = () => {
     closeModalAlert2();
   };
 
-  // const fetchOutgoing = async () => {
-  //   setLoadingOutgoing(true);
-  //   console.log(`${urlEnv}fetchOutgoing`);
-  //   try {
-  //     const response = await axios.get(
-  //       `${urlEnv}fetchoutgoing`,
+  const deleteFromIncomingToSend = async (id: number) => {
+    console.log("deleteFromIncoming", id);
+    setLoadingDeleteIncoming(true);
+    try {
+      const response = await axios.post(
+        `${urlEnv}deletefromincomingtosend`,
+        {
+          id: id,
+        },
+        {
+          withCredentials: true,
+        }
+      );
 
-  //       { withCredentials: true }
-  //     );
-  //     if (response.data) {
-  //       let filteredData = response.data;
+      if (response) {
+        console.log(response.data);
 
-  //       if (selectedFilter !== "All") {
-  //         filteredData = response.data.filter(
-  //           (item: data) => item.document === selectedFilter
-  //         );
-  //       }
+        console.log(response.data);
+        // await fetchIncoming();
+        if (currentPage > totalPagesIncoming) {
+          setCurrentPage(totalPagesIncoming);
+        }
+      }
+    } catch (err: any) {
+      console.error(`Error deleting data: ${err.message}`);
+    }
+    setLoadingDeleteIncoming(false);
+    closeModalAlert2();
+  };
 
-  //       if (nameSearch.trim() !== "") {
-  //         const searchLower = nameSearch.trim().toLowerCase();
+  const deleteFromOutgoingToSend = async (id: number) => {
+    console.log("deleteFromOutgoing", id);
+    setLoadingDeleteIncoming(true);
+    try {
+      const response = await axios.post(
+        `${urlEnv}deletefromoutgoingtosend`,
+        {
+          id: id,
+        },
+        {
+          withCredentials: true,
+        }
+      );
 
-  //         filteredData = filteredData.filter(
-  //           (item: data) =>
-  //             item.first_name.toLowerCase().includes(searchLower) ||
-  //             item.middle_name.toLowerCase().includes(searchLower) ||
-  //             item.last_name.toLowerCase().includes(searchLower)
-  //         );
-  //       }
+      if (response) {
+        console.log(response.data);
 
-  //       // console.log("incoming datas", filteredData);
-  //       setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
-  //       setCurrentPageOutgoingData(
-  //         filteredData
-  //           .sort((a: { id: number }, b: { id: number }) => a.id - b.id) // Sorting by id in ascending order
-  //           .slice(startIndex, startIndex + itemsPerPage)
-  //       );
-
-  //       setDataOutgoing(filteredData);
-  //       setLoadingOutgoing(false);
-  //     }
-  //   } catch (err: any) {
-  //     //logout function here if JWT expires
-  //     console.log(`Error fetching data: ${err.message}`);
-  //     if (err.response.status == 404) {
-  //       setLoadingOutgoing(false);
-  //       setDataOutgoing(null);
-  //     } else if (err.response.status === 401) {
-  //       setLoadingOutgoing(false);
-  //       openModalAlert1();
-  //     }
-  //   }
-  // };
+        console.log(response.data);
+        // await fetchOutgoing();
+        if (currentPage > totalPagesOutgoing) {
+          setCurrentPage(totalPagesOutgoing);
+        }
+      }
+    } catch (err: any) {
+      console.error(`Error deleting data: ${err.message}`);
+    }
+    setLoadingDeleteIncoming(false);
+    closeModalAlert2();
+  };
 
   const deleteFromOutgoing = async (id: number) => {
     console.log("deleteFromOutgoing", id);
@@ -1204,7 +1156,7 @@ const AdminDashboard: React.FC = () => {
 
       if (response) {
         console.log("sent to outgoing");
-        deleteFromIncoming(data.id);
+        deleteFromIncomingToSend(data.id);
         closeModalAlert3();
         closeModalAlertEdit();
       }
@@ -1226,7 +1178,7 @@ const AdminDashboard: React.FC = () => {
 
       if (response) {
         console.log("sent to Released");
-        deleteFromOutgoing(data.id);
+        deleteFromOutgoingToSend(data.id);
         closeModalAlert4();
         closeModalAlertEdit();
       }
@@ -1235,125 +1187,6 @@ const AdminDashboard: React.FC = () => {
     }
     setLoadingSendToReleased(false);
   };
-
-  // const fetchReleased = async () => {
-  //   setLoadingReleased(true);
-  //   console.log(`${urlEnv}fetchReleased`);
-  //   try {
-  //     const response = await axios.get(
-  //       `${urlEnv}fetchreleased`,
-
-  //       { withCredentials: true }
-  //     );
-  //     if (response.data) {
-  //       let filteredData = response.data;
-
-  //       if (selectedFilter !== "All") {
-  //         filteredData = response.data.filter(
-  //           (item: data) => item.document === selectedFilter
-  //         );
-  //       }
-
-  //       if (nameSearch.trim() !== "") {
-  //         const searchLower = nameSearch.trim().toLowerCase();
-
-  //         filteredData = filteredData.filter(
-  //           (item: data) =>
-  //             item.first_name.toLowerCase().includes(searchLower) ||
-  //             item.middle_name.toLowerCase().includes(searchLower) ||
-  //             item.last_name.toLowerCase().includes(searchLower)
-  //         );
-  //       }
-
-  //       // console.log("incoming datas", filteredData);
-  //       setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
-  //       setCurrentPageReleasedData(
-  //         filteredData
-  //           .sort((a: { id: number }, b: { id: number }) => a.id - b.id) // Sorting by id in ascending order
-  //           .slice(startIndex, startIndex + itemsPerPage)
-  //       );
-
-  //       setDataReleased(filteredData);
-  //       setLoadingReleased(false);
-  //     }
-  //   } catch (err: any) {
-  //     //logout function here if JWT expires
-  //     console.log(`Error fetching data: ${err.message}`);
-  //     if (err.response.status == 404) {
-  //       setLoadingReleased(false);
-  //       setDataReleased(null);
-  //     } else if (err.response.status === 401) {
-  //       setLoadingReleased(false);
-  //       openModalAlert1();
-  //     }
-  //   }
-  // };
-
-  //fetch upon mount
-  // useEffect(() => {
-  //   if (activeTab === 0) {
-  //     fetchIncoming();
-  //     const interval = setInterval(fetchIncoming, 60000);
-  //     return () => clearInterval(interval);
-  //   } else
-  //   if (activeTab === 1) {
-  //     fetchOutgoing();
-  //     const interval = setInterval(fetchOutgoing, 60000);
-  //     return () => clearInterval(interval);
-  //   } else
-  //   if (activeTab === 2) {
-  //     fetchReleased();
-  //     const interval = setInterval(fetchReleased, 60000);
-  //     return () => clearInterval(interval);
-  //   }
-  // }, []);
-
-  //for paging
-  // useEffect(() => {
-  //   if (activeTab === 0 && dataIncoming) {
-  //     const startIndex = (currentPage - 1) * itemsPerPage;
-  //     setCurrentPageIncomingData(
-  //       dataIncoming.slice(startIndex, startIndex + itemsPerPage)
-  //     );
-  //   }
-  // }, [activeTab, currentPage, dataIncoming]);
-
-  // useEffect(() => {
-  //   if (activeTab === 1 && dataOutgoing) {
-  //     const startIndex = (currentPage - 1) * itemsPerPage;
-  //     setCurrentPageOutgoingData(
-  //       dataOutgoing.slice(startIndex, startIndex + itemsPerPage)
-  //     );
-  //   }
-  // }, [activeTab, currentPage, dataOutgoing]);
-
-  // useEffect(() => {
-  //   if (activeTab === 2 && dataReleased) {
-  //     const startIndex = (currentPage - 1) * itemsPerPage;
-  //     setCurrentPageReleasedData(
-  //       dataReleased.slice(startIndex, startIndex + itemsPerPage)
-  //     );
-  //   }
-  // }, [activeTab, currentPage, dataReleased]);
-
-  //for filtering
-  // useEffect(() => {
-  //   if (activeTab === 0) {
-  //     fetchIncoming();
-  //   }
-  // }, [activeTab, selectedFilter, currentPage, nameSearch]);
-
-  // useEffect(() => {
-  //   if (activeTab === 1) {
-  //     fetchOutgoing();
-  //   }
-  // }, [activeTab, selectedFilter, currentPage, nameSearch]);
-
-  // useEffect(() => {
-  //   if (activeTab === 2) {
-  //     fetchReleased();
-  //   }
-  // }, [activeTab, selectedFilter, currentPage, nameSearch]);
 
   const toUpperCase = (value: unknown): string => {
     return typeof value === "string" ? value.toUpperCase() : String(value);
@@ -1397,18 +1230,6 @@ const AdminDashboard: React.FC = () => {
     console.log("fullName", fullName);
     const address = `${barangay}, ${province}, ${city}`;
     console.log("fullName", fullName);
-
-    // const dataItem = {
-    //   name: "John Doe",
-    //   age: "18",
-    //   address: "Purok 5, Barangay Jugan, Consolacion, Cebu",
-    //   father: "Juan Dela Cruz",
-    //   fatherAge: "46",
-    //   mother: "Maria Dela Cruz",
-    //   motherAge: "40",
-    //   issuedDate: "16th day of March 2021",
-    //   purpose: "SCHOLARSHIP APPLICATION at SM FOUNDATION",
-    // };
 
     const shortBondPaperSize = {
       width: 12240,
