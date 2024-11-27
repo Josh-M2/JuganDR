@@ -7,23 +7,48 @@ import React, {
 import { Transition } from "@headlessui/react";
 import bell from "./../assets/bell.svg";
 import notifBellSound from "./../assets/sound-bell.mp4";
+import { useNavigate } from "react-router-dom";
 
 interface NotificationData {
   id: number;
+  name: string;
+  document: string;
+  trackID: string;
   timestamp: string;
   isVisible: boolean;
 }
 
 const NotificationBar = React.forwardRef((props, ref) => {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
+  const navigate = useNavigate();
   const MAX_NOTIFICATIONS = 5;
 
   // Function to add a new notification
-  const addNotification = () => {
+  const addNotification = (
+    firstName: string,
+    middleName: string,
+    lastName: string,
+    document: string,
+    trackID: string,
+    extname?: string
+  ) => {
+    console.log("addNotificationfirstname", firstName);
+    console.log("addNotificationfirstname", middleName);
+    console.log("addNotificationfirstname", lastName);
+    console.log("addNotificationfirstname", document);
+    console.log("addNotificationfirstname", extname);
+
+    const name = `${firstName} ${middleName[0].toUpperCase()}. ${lastName} ${
+      extname ? extname : ""
+    }`;
     const timestamp = new Date().toLocaleTimeString();
-    const newNotification = {
+
+    const newNotification: NotificationData = {
       id: Date.now(),
+      name,
+      document,
       timestamp,
+      trackID,
       isVisible: true,
     };
 
@@ -83,11 +108,17 @@ const NotificationBar = React.forwardRef((props, ref) => {
     playNotificationSound,
   }));
 
+  const navigateToRequester = (notifData: any) => {
+    console.log("clicked", notifData);
+    removeNotification(notifData.id);
+    navigate(`/Admin Dashboard/?track_id=${notifData.trackID}`);
+  };
+
   return (
     <div className="relative">
       {/* Button is still here, but we'll trigger it externally now */}
       <button
-        onClick={addNotification}
+        onClick={() => addNotification}
         className="absolute top-5 right-5 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none hidden"
       >
         Add Notification
@@ -97,7 +128,7 @@ const NotificationBar = React.forwardRef((props, ref) => {
       </button>
 
       {/* Notification Stack */}
-      <div className="fixed bottom-[75px] right-5 space-y-2 w-80 z-10 flex flex-col-reverse gap-1">
+      <div className="fixed bottom-[75px] right-5 space-y-2 w-80 z-10 flex flex-col-reverse gap-1 cursor-pointer">
         {notifications.map((notification) => (
           <Transition
             key={notification.id}
@@ -109,7 +140,12 @@ const NotificationBar = React.forwardRef((props, ref) => {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="bg-white border border-gray-200 shadow-md rounded-lg p-4 flex items-start justify-between">
+            <div
+              className="bg-white border border-gray-200 shadow-md rounded-lg p-4 flex items-start justify-between"
+              onClick={() => {
+                navigateToRequester(notification);
+              }}
+            >
               <div className="flex items-center gap-2">
                 <img src={bell} alt="bell" className="w-auto h-8" />
                 <div>
@@ -117,7 +153,10 @@ const NotificationBar = React.forwardRef((props, ref) => {
                     New incoming request!
                   </span>
                   <p className="text-sm text-gray-500">
-                    Check the request in dashboard now!
+                    From: {notification.name}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Document: {notification.document}
                   </p>
                   <p className="text-xs text-gray-400">
                     Time: {notification.timestamp}

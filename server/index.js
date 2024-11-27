@@ -251,6 +251,7 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
     if (!backID) errors.backID = "Back ID is required";
     if (!purok_certificate)
       errors.purok_certificate = "Purok Certificate is required";
+    if (!mobile_num) errors.purok_certificate = "Mobile number is required";
   }
 
   // Check if there are any errors
@@ -398,6 +399,38 @@ app.get("/fetch-data-for-tracking", async (req, res) => {
 //     return res.status(500).send("Internal server error");
 //   }
 // });
+
+app.post("/deletefromincomingtosend", async (req, res) => {
+  console.log("incoming delete id", req.body);
+  const accessToken = req.cookies.accessToken;
+
+  if (!accessToken) {
+    return res.status(401).json({ error: "Access token not found" });
+  }
+
+  const supabaseForAuthenticated = createClient(supabaseUrl, supabaseKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+
+  const { id } = req.body;
+
+  const { data, error } = await supabaseForAuthenticated
+    .from("incoming")
+    .delete({ returning: "representation" })
+    .eq("id", id)
+    .select("*");
+
+  if (error) {
+    console.log(JSON.stringify(error));
+    return res.send("Error deleting data" + JSON.stringify(error));
+  }
+
+  return res.send("Data deleted");
+});
 
 app.post("/deletefromincoming", async (req, res) => {
   console.log("incoming delete id", req.body);
@@ -547,6 +580,37 @@ app.post("/permanently-delete-released-data", async (req, res) => {
   }
 
   return res.status(200).json({ success: true });
+});
+
+app.post("/deletefromoutgoingtosend", async (req, res) => {
+  console.log("outgoing delete id", req.body);
+  const accessToken = req.cookies.accessToken;
+  if (!accessToken) {
+    return res.status(401).json({ error: "Access token not found" });
+  }
+
+  const supabaseForAuthenticated = createClient(supabaseUrl, supabaseKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+
+  const { id } = req.body;
+
+  const { data, error } = await supabaseForAuthenticated
+    .from("outgoing")
+    .delete({ returning: "representation" })
+    .eq("id", id)
+    .select("*");
+
+  if (error) {
+    console.log(JSON.stringify(error));
+    return res.send("Error deleting data" + JSON.stringify(error));
+  }
+
+  return res.send("Data deleted");
 });
 
 app.post("/deletefromoutgoing", async (req, res) => {
@@ -755,11 +819,20 @@ app.post("/updatedata", async (req, res) => {
 });
 
 const loginRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login attempts per windowMs
+  windowMs: 5 * 60 * 1000, // 5 minute
+  max: 5,
+  keyGenerator: (req) => {
+    const rateLimitToken =
+      req.cookies.rate_limit_token || req.headers["x-rate-limit-token"];
+
+    // Ensure the token exists, if not, return null (this will block the request)
+    if (!rateLimitToken) {
+      return null;
+    }
+    return rateLimitToken; // Token is used as the unique identifier for rate limiting
+  },
   message: {
-    errorAttempt:
-      "Too many login attempts from this IP, please try again after 15 minutes.",
+    errorAttempt: "Too many login attempts, please try again after 5 minutes.",
   },
 });
 
@@ -799,20 +872,6 @@ app.post("/login", loginRateLimiter, async (req, res) => {
   }
 });
 
-app.post("/email-change-password", async (req, res) => {
-  console.log("email-change-password", req.body);
-  const { email } = req.body;
-
-  let { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${domain}/reset-password"`,
-  });
-  if (error) {
-    console.log(error.message);
-    return res.send(data);
-  }
-  res.status(200).json({ message: "Password reset email sent!" });
-});
-
 app.post("/change-password", async (req, res) => {
   console.log("change-password", req.body);
   const { currentPassword, newPassword, email } = req.body;
@@ -847,6 +906,53 @@ app.post("/change-password", async (req, res) => {
 
   res.status(200).json({ message: "Succesfull" });
 });
+
+const forgotPasswordRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 1,
+  keyGenerator: (req) => {
+    const rateLimitToken =
+      req.cookies.rate_limit_token || req.headers["x-rate-limit-token"];
+
+    // Ensure the token exists, if not, return null (this will block the request)
+    if (!rateLimitToken) {
+      return null;
+    }
+    return rateLimitToken; // Token is used as the unique identifier for rate limiting
+  },
+  message: {
+    errorAttempt: "Too many request, try again after later",
+  },
+});
+app.post(
+  "/email-change-password",
+  forgotPasswordRateLimiter,
+  async (req, res) => {
+    console.log("email-change-password", req.body);
+    const { email } = req.body;
+
+    const secretRateLimitToken = process.env.REACT_APP_PUBLIC_TOKEN;
+
+    const rateLimitToken = req.cookies.rate_limit_token;
+
+    if (!rateLimitToken || rateLimitToken !== secretRateLimitToken) {
+      return res.status(401).json({ error: "invalid token" });
+    }
+
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${domain}/reset password`,
+    });
+    if (error) {
+      console.error("error-change-password: ", error.message);
+      return res.send(data);
+    }
+
+    if (data) {
+      console.log("datachangepassword: ", data);
+    }
+    res.status(200).json({ message: "Password reset email sent!" });
+  }
+);
 
 app.post("/logout", async (req, res) => {
   res.clearCookie("accessToken");

@@ -27,7 +27,7 @@ const Login: React.FC = () => {
       navigate("/Admin Dashboard");
     }
   }, []);
-  const countdownDuration = 15 * 60;
+  const countdownDuration = 5 * 60;
   const [timeRemaining, setTimeRemaining] = useState<number>(countdownDuration);
   const [isCountingDown, setIsCountingDown] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(false);
@@ -282,14 +282,14 @@ const Login: React.FC = () => {
                   >
                     Password
                   </label>
-                  {/* <div className="text-sm">
-                  <a
-                    href="#"
-                    className="font-semibold text-indigo-600 hover:text-indigo-500"
-                  >
-                    Forgot password?
-                  </a>
-                </div> */}
+                  <div className="text-sm">
+                    <a
+                      href="/email-reset-password"
+                      className="font-semibold text-indigo-600 hover:text-indigo-500"
+                    >
+                      Forgot password?
+                    </a>
+                  </div>
                 </div>
                 <div className="mt-2 relative flex flex-col">
                   <input

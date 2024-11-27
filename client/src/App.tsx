@@ -18,6 +18,7 @@ import FillUpBarangayBusinessPermit from "./components/FillUpBarangayBusinessPer
 import FillUpNoClaimsAndConflict from "./components/FillUpNoClaimsAndConflict";
 import FillUpBarangayResidency from "./components/FillUpBarangayResidency";
 import TrackDocument from "./components/TrackDocument";
+import ResetPassword from "./components/ResetPassword";
 
 function App() {
   return (
@@ -58,10 +59,11 @@ function App() {
           <Route path="/Track Document" element={<TrackDocument />} />
           <Route path="/Admin Dashboard" element={<AdminDashboard />} />
           <Route path="/reset-password" element={<ChangePassword />} />
-          {/* <Route
+          <Route
             path="/email-reset-password"
             element={<EmailForChangePassword />}
-          /> */}
+          />
+          <Route path="/reset password" element={<ResetPassword />} />
         </Routes>
       </Router>
     </ChakraProvider>

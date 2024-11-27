@@ -2,20 +2,68 @@ import React, { useEffect, useState } from "react";
 import juganlogo from "./../assets/Jugan-logo.png";
 import { Checkbox, CheckboxGroup } from "@chakra-ui/react";
 import errorimage from "./../assets/circle-exclamation-solid.svg";
+import errorimageGreen from "./../assets/circle-exclamation-solid-green.svg";
 import eyeopen from "./../assets/eye-regular.svg";
 import eyeclose from "./../assets/eye-slash-regular.svg";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import LoaderRing from "./LoaderRing";
+import { supabase } from "../config";
+import { error } from "console";
 
 export const ErrorImage = () => {
   return <img src={errorimage} alt="error" className="w-3 h-3 mr-1.5" />;
+};
+
+export const ErrorImageGreen = () => {
+  return <img src={errorimageGreen} alt="error" className="w-3 h-3 mr-1.5" />;
 };
 
 const EmailForChangePassword: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const countdownDuration = 1 * 60;
+  const [timeRemaining, setTimeRemaining] = useState<number>(countdownDuration);
+  const [isCountingDown, setIsCountingDown] = useState<boolean>(false);
+  const [timeError, setTimeError] = useState("");
+
+  useEffect(() => {
+    if (isCountingDown && timeRemaining > 0) {
+      const timer = setInterval(() => {
+        setTimeRemaining((prevTime) => prevTime - 1);
+      }, 1000);
+
+      return () => clearInterval(timer);
+    } else if (timeRemaining <= 0) {
+      setIsCountingDown(false);
+      setTimeError("");
+      localStorage.removeItem("countdownEndTimeResendEmail");
+      localStorage.removeItem("errorMainResendEmail");
+    }
+  }, [isCountingDown, timeRemaining]);
+
+  const minutes = Math.floor(timeRemaining / 60);
+  const seconds = timeRemaining % 60;
+
+  useEffect(() => {
+    const savedEndTime = localStorage.getItem("countdownEndTimeResendEmail");
+    const savederrorMainResendEmail =
+      localStorage.getItem("errorMainResendEmail") || "";
+    if (savedEndTime) {
+      const timeLeft = Math.floor((Number(savedEndTime) - Date.now()) / 1000);
+      if (timeLeft > 0) {
+        setTimeRemaining(timeLeft);
+        setTimeError(savederrorMainResendEmail);
+        setIsCountingDown(true);
+      } else {
+        localStorage.removeItem("countdownEndTimeResendEmail");
+        localStorage.removeItem("errorMainResendEmail");
+      }
+    }
+  }, []);
 
   const validateEmail = (email: string): string => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -41,25 +89,59 @@ const EmailForChangePassword: React.FC = () => {
       setLoading(false);
       return;
     }
-    const urlEnv = process.env.REACT_APP_SERVER_ACCES;
+    const urlEnv = process.env.REACT_APP_SERVER_ACCESS;
 
     try {
-      const response = await axios.post(`${urlEnv}email-change-password`, {
-        email,
-      });
+      const response = await axios.post(
+        `${urlEnv}email-change-password`,
+        {
+          email,
+        },
+        { withCredentials: true }
+      );
 
-      if (response.data) {
-        console.log(response.data);
+      if (response?.data?.message) {
+        setSuccess(response.data.message);
+        setTimeError("Resend email verification link after countdown");
+        setTimeRemaining(countdownDuration);
+        setIsCountingDown(true);
+        const endTime = Date.now() + countdownDuration * 1000;
+        localStorage.setItem("countdownEndTimeResendEmail", endTime.toString());
+        localStorage.setItem(
+          "errorMainResendEmail",
+          "Resend email verification link after countdown"
+        );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("error email changing password: ", error);
+      if (error?.response?.data?.errorAttempt) {
+        setErrors(error?.response?.data?.errorAttempt);
+      }
+
+      if (error.response?.data?.errorAttempt) {
+        setTimeError("Resend email verification link after countdown");
+        setTimeRemaining(countdownDuration);
+        setIsCountingDown(true);
+        const endTime = Date.now() + countdownDuration * 1000;
+        localStorage.setItem("countdownEndTimeResendEmail", endTime.toString());
+        localStorage.setItem(
+          "errorMainResendEmail",
+          "Resend email verification link after countdown"
+        );
+      }
       setLoading(false);
     }
 
-    console.log("submited", email);
+    // console.log("submited", urlEnv);
 
     setLoading(false);
   };
+
+  // useEffect(() => {
+  //   if (success) setErrors("");
+
+  //   if (errors) setSuccess("");
+  // }, [success, errors]);
 
   return (
     <div className="h-dvh">
@@ -71,11 +153,23 @@ const EmailForChangePassword: React.FC = () => {
             className="mx-auto h-40 w-auto"
           />
           <h2 className="mt-3 mb-3 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-            Enter email to change password
+            Change password
           </h2>
         </div>
 
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
+          {errors && (
+            <label className="text-[rgb(218,44,44)] text-[13px] mt-[5px] flex items-center">
+              <ErrorImage />
+              {errors}
+            </label>
+          )}
+          {success && (
+            <label className="text-green-600 text-[13px] mt-[5px] flex items-center">
+              <ErrorImageGreen />
+              {success}
+            </label>
+          )}
           <form onSubmit={handleChangePassword}>
             <div className="mt-1">
               <div className="flex items-center justify-between">
@@ -111,10 +205,19 @@ const EmailForChangePassword: React.FC = () => {
             <div className="mt-3">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isCountingDown}
                 className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
-                {loading ? <LoaderRing /> : "Confirm"}
+                {loading ? (
+                  <LoaderRing />
+                ) : (
+                  `Send Verification Link ${
+                    isCountingDown
+                      ? `in ${minutes}:${seconds < 10 ? "0" : ""}${seconds}`
+                      : ""
+                  }`
+                )}
+                {/* Countdown:  */}
               </button>
             </div>
           </form>
