@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import logo from "./../assets/Jugan-logo.png";
 import userlogo from "./../assets/user.svg";
 import { PopoverGroup } from "@headlessui/react";
@@ -24,8 +24,18 @@ import {
   Tooltip,
 } from "@chakra-ui/react";
 import axios from "axios";
+import NotificationBar from "./NotificationBar";
 
-const NavigationBar: React.FC = () => {
+interface navProps {
+  allDataIncoming?: any[];
+}
+
+const NavigationBar: React.FC<navProps> = ({ allDataIncoming }) => {
+  useEffect(() => {
+    if (allDataIncoming) {
+      console.log("navProps", allDataIncoming);
+    }
+  }, [allDataIncoming]);
   const location = useLocation();
   const navigate = useNavigate();
   const isAdminDashboard = location.pathname === "/Admin%20Dashboard";
@@ -98,6 +108,23 @@ const NavigationBar: React.FC = () => {
             >
               Documents
             </a>
+
+            {/* <Menu>
+              <Tooltip label="My profile" aria-label="My profile">
+                <MenuButton>
+                  <div className="rounded-full border p-2">NOT</div>
+                </MenuButton>
+              </Tooltip>
+              <Portal>
+                <MenuList zIndex="popover" bg="white" boxShadow="lg">
+                  <MenuGroup title="Review requests notifications">
+                    <MenuItem
+                      onClick={() => navigate("/reset-password")}
+                    ></MenuItem>
+                  </MenuGroup>
+                </MenuList>
+              </Portal>
+            </Menu> */}
 
             <Menu>
               <Tooltip label="My profile" aria-label="My profile">

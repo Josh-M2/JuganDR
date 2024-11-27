@@ -8,7 +8,7 @@ const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
 
-if (process.env.NODE_ENV === "production") {
+if (process.env.REACT_APP_NODE_ENV === "production") {
   console.log = function () {};
   console.info = function () {};
   console.warn = function () {};
