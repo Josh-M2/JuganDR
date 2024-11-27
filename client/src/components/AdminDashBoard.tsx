@@ -34,7 +34,7 @@ import {
 } from "@chakra-ui/react";
 
 import React, { FormEvent, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import "../AdminDashboard.css";
 import axios from "axios";
 import { ErrorImage } from "./Login";
@@ -142,14 +142,16 @@ const AdminDashboard: React.FC = () => {
   }, [accessToken]); // Only run this when `accessToken` changes
   const toast = useToast();
   const navigate = useNavigate();
+  const [allDataIncoming, setAllDataIncoming] = useState<data[]>([]);
+  useEffect(() => {
+    if (allDataIncoming) {
+      console.log("allDataIncoming", allDataIncoming);
+    }
+  }, [allDataIncoming]);
   const [dataIncoming, setDataIncoming] = useState<data[]>([]);
   const [dataOutgoing, setDataOutgoing] = useState<data[]>([]);
   const [dataReleased, setDataReleased] = useState<data[]>([]);
-  useEffect(() => {
-    if (dataReleased) {
-      console.log("dataReleased", dataReleased);
-    }
-  }, [dataReleased]);
+
   const initialRef = React.useRef(null);
   const finalRef = React.useRef(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -202,6 +204,19 @@ const AdminDashboard: React.FC = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [nameSearch, setNameSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  let track_id = searchParams.get("track_id");
+
+  useEffect(() => {
+    if (track_id) {
+      setNameSearch(track_id);
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("track_id");
+      setSearchParams(newSearchParams);
+      track_id = "";
+    }
+  }, [track_id]);
+
   const [activeTab, setActiveTab] = useState(0);
   useEffect(() => {
     console.log(activeTab);
@@ -253,9 +268,22 @@ const AdminDashboard: React.FC = () => {
       });
   }, [selectedDatas]);
 
-  const triggerNotification = () => {
+  const triggerNotification = (
+    fistName: string,
+    middleName: string,
+    lastname: string,
+    document: string,
+    trackID: string,
+    extname?: string
+  ) => {
     if (notificationBarRef.current) {
-      notificationBarRef.current.addNotification();
+      notificationBarRef.current.addNotification(
+        fistName,
+        middleName,
+        lastname,
+        document,
+        trackID
+      );
     }
   };
 
@@ -723,6 +751,7 @@ const AdminDashboard: React.FC = () => {
   //filtering
   const processAndSetIncomingData = (data: data[]) => {
     let filteredData = data;
+    setAllDataIncoming(filteredData);
     console.log("data_incoming_filtered", data);
 
     if (selectedFilter !== "All") {
@@ -735,7 +764,8 @@ const AdminDashboard: React.FC = () => {
         (item: data) =>
           item.first_name.toLowerCase().includes(searchLower) ||
           item.middle_name.toLowerCase().includes(searchLower) ||
-          item.last_name.toLowerCase().includes(searchLower)
+          item.last_name.toLowerCase().includes(searchLower) ||
+          item.track_id.toLowerCase().includes(searchLower)
       );
     }
 
@@ -758,11 +788,20 @@ const AdminDashboard: React.FC = () => {
       switch (payload.eventType) {
         case "INSERT":
           updatedData = [payload.new, ...prevData];
-          triggerNotification();
+
           break;
         case "UPDATE":
           updatedData = updatedData.map((item) =>
             item.id === payload.new.id ? payload.new : item
+          );
+          console.log("payload.new", payload.new);
+          triggerNotification(
+            payload.new.first_name,
+            payload.new.middle_name,
+            payload.new.last_name,
+            payload.new.document,
+            payload.new.track_id,
+            payload.new.ext_name
           );
           break;
         case "DELETE":
@@ -2849,11 +2888,11 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <>
-      <NavigationBar />
+      <NavigationBar allDataIncoming={allDataIncoming} />
 
       <div className="custom-width !mb-5">
         <div className="m-5 flex flex-row gap-3 justify-between items-center">
-          <h1 className="text-[24px] font-semibold">Admin Dashboard</h1>
+          <h1 className="text-[20px] font-semibold">Admin Dashboard</h1>
           <div className="flex flex-row items-center gap-3">
             <button
               onClick={refresh}

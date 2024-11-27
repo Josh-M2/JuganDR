@@ -251,6 +251,7 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
     if (!backID) errors.backID = "Back ID is required";
     if (!purok_certificate)
       errors.purok_certificate = "Purok Certificate is required";
+    if (!mobile_num) errors.purok_certificate = "Mobile number is required";
   }
 
   // Check if there are any errors
@@ -755,11 +756,20 @@ app.post("/updatedata", async (req, res) => {
 });
 
 const loginRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login attempts per windowMs
+  windowMs: 5 * 60 * 1000, // 5 minute
+  max: 5,
+  keyGenerator: (req) => {
+    const rateLimitToken =
+      req.cookies.rate_limit_token || req.headers["x-rate-limit-token"];
+
+    // Ensure the token exists, if not, return null (this will block the request)
+    if (!rateLimitToken) {
+      return null;
+    }
+    return rateLimitToken; // Token is used as the unique identifier for rate limiting
+  },
   message: {
-    errorAttempt:
-      "Too many login attempts from this IP, please try again after 15 minutes.",
+    errorAttempt: "Too many login attempts, please try again after 5 minutes.",
   },
 });
 

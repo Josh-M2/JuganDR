@@ -58,10 +58,10 @@ function App() {
           <Route path="/Track Document" element={<TrackDocument />} />
           <Route path="/Admin Dashboard" element={<AdminDashboard />} />
           <Route path="/reset-password" element={<ChangePassword />} />
-          {/* <Route
+          <Route
             path="/email-reset-password"
             element={<EmailForChangePassword />}
-          /> */}
+          />
         </Routes>
       </Router>
     </ChakraProvider>
