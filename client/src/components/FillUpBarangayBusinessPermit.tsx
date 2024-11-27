@@ -332,7 +332,6 @@ const FillUpBarangayBusinessPermit: React.FC = () => {
     const middle_nameError = validatemiddle_name(form.middle_name);
     const last_nameError = validatelast_name(form.last_name);
     const ageError = validateage(form.age);
-    const mobile_numError = validatemobile_num(form.mobile_num);
     const purposeError = validatepurpose(form.purpose);
     // const schoolError = validateschool(form.school);
     const streetError = validatestreet(form.street);
@@ -342,10 +341,12 @@ const FillUpBarangayBusinessPermit: React.FC = () => {
     let frontIDError = validateFrontID(form.frontID);
     let backIDError = validateBackID(form.backID);
     let purokCertError = validatepurokCert(form.purok_certificate);
+    let mobile_numError = validatemobile_num(form.mobile_num);
     if (isAuthenticated) {
       frontIDError = "";
       backIDError = "";
       purokCertError = "";
+      mobile_numError = "";
     }
 
     if (
@@ -789,7 +790,12 @@ const FillUpBarangayBusinessPermit: React.FC = () => {
                       htmlFor="mobile_num"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Mobile number <span className="text-rose-600">*</span>
+                      Mobile number{" "}
+                      {isAuthenticated ? (
+                        ""
+                      ) : (
+                        <span className="text-rose-600">*</span>
+                      )}
                     </label>
                     <div className="mt-2">
                       <Stack spacing={1}>
@@ -1040,7 +1046,8 @@ const FillUpBarangayBusinessPermit: React.FC = () => {
                       htmlFor="back"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Back image of valid ID  {isAuthenticated ? (
+                      Back image of valid ID{" "}
+                      {isAuthenticated ? (
                         ""
                       ) : (
                         <span className="text-rose-600">*</span>
@@ -1081,7 +1088,8 @@ const FillUpBarangayBusinessPermit: React.FC = () => {
                       htmlFor="purokcert"
                       className="block text-sm font-medium leading-6 text-gray-900"
                     >
-                      Purok Certificate  {isAuthenticated ? (
+                      Purok Certificate{" "}
+                      {isAuthenticated ? (
                         ""
                       ) : (
                         <span className="text-rose-600">*</span>
