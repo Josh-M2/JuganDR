@@ -234,9 +234,6 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
 
   if (!namePattern.test(purpose)) errors.purpose = "Invalid purpose format";
 
-  if (!phonePattern.test(mobile_num))
-    errors.mobile_num = "Mobile number must be 10-15 digits";
-
   if (!alphanumericPattern.test(street))
     errors.street = "Invalid street format";
   if (!alphanumericPattern.test(barangay))
@@ -251,7 +248,8 @@ app.post("/incoming_request", incoming_requestRateLimiter, async (req, res) => {
     if (!backID) errors.backID = "Back ID is required";
     if (!purok_certificate)
       errors.purok_certificate = "Purok Certificate is required";
-    if (!mobile_num) errors.purok_certificate = "Mobile number is required";
+    if (!phonePattern.test(mobile_num))
+      errors.mobile_num = "Mobile number must be 10-15 digits";
   }
 
   // Check if there are any errors
