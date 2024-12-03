@@ -77,7 +77,7 @@ const NavigationBar: React.FC<navProps> = ({ allDataIncoming }) => {
           <div className="flex lg:flex-1">
             <div className="flex flex-row gap-3 -m-1.5 h-[70px] items-center">
               <div>
-                <a href="/" className="p-1.5">
+                <a href="/" className="p-1.5" tabIndex={-1}>
                   <img src={logo} alt="logo" className="w-167px w-[64px]" />
                 </a>
               </div>
@@ -95,6 +95,7 @@ const NavigationBar: React.FC<navProps> = ({ allDataIncoming }) => {
                   ? "after:scale-x-100 bg-blue-100 bg-opacity-50"
                   : "after:scale-x-0"
               }`}
+              tabIndex={-1}
             >
               Dashboard
             </a>
@@ -105,6 +106,7 @@ const NavigationBar: React.FC<navProps> = ({ allDataIncoming }) => {
                   ? "after:scale-x-100 bg-blue-100 bg-opacity-50"
                   : "after:scale-x-0"
               }`}
+              tabIndex={-1}
             >
               Documents
             </a>
@@ -128,7 +130,7 @@ const NavigationBar: React.FC<navProps> = ({ allDataIncoming }) => {
 
             <Menu>
               <Tooltip label="My profile" aria-label="My profile">
-                <MenuButton>
+                <MenuButton tabIndex={-1}>
                   <div className="rounded-full border p-2">
                     <img
                       src={userlogo}

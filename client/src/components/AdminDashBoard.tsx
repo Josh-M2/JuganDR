@@ -2819,15 +2819,28 @@ const AdminDashboard: React.FC = () => {
             variant="enclosed"
             index={activeTab}
             onChange={setActiveTab}
+            tabIndex={-1}
           >
-            <TabList className="justify-evenly">
-              <Tab className="w-[374.53px]" onClick={handleIncomingClick}>
+            <TabList className="justify-evenly" tabIndex={-1}>
+              <Tab
+                className="w-[374.53px]"
+                onClick={handleIncomingClick}
+                tabIndex={-1}
+              >
                 Review
               </Tab>
-              <Tab className="w-[374.53px]" onClick={handleOutgoingClick}>
+              <Tab
+                className="w-[374.53px]"
+                onClick={handleOutgoingClick}
+                tabIndex={-1}
+              >
                 To Release
               </Tab>
-              <Tab className="w-[374.53px]" onClick={handleReleasedClick}>
+              <Tab
+                className="w-[374.53px]"
+                onClick={handleReleasedClick}
+                tabIndex={-1}
+              >
                 Released
               </Tab>
             </TabList>
