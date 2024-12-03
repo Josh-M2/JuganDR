@@ -286,6 +286,7 @@ const Login: React.FC = () => {
                     <a
                       href="/email-reset-password"
                       className="font-semibold text-indigo-600 hover:text-indigo-500"
+                      tabIndex={-1}
                     >
                       Forgot password?
                     </a>
@@ -308,12 +309,13 @@ const Login: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3" // Absolute positioning for the button
+                    className="absolute inset-y-0 right-0 flex items-center pr-3"
+                    tabIndex={-1}
                   >
                     <img
                       src={showPassword ? eyeopen : eyeclose}
                       alt="toggle visibility"
-                      className="w-5 h-5" // Adjust size as needed
+                      className="w-5 h-5"
                     />
                   </button>
                 </div>
@@ -339,6 +341,7 @@ const Login: React.FC = () => {
               className="mt-3 text-center text-sm text-gray-500"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)} // Update the state when checkbox changes
+              tabIndex={-1}
             >
               Stay me logged in for 7 days
             </Checkbox>
