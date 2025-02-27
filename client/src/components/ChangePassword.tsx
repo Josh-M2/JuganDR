@@ -88,12 +88,12 @@ const ChangePassword: React.FC = () => {
       newPassword !== confirmNewPassword ? "Passwords do not match" : "";
 
     setErrors({
-      currentPassword: currentPasswordError,
+      currentPassword: "",
       newPassword: newPasswordError,
       confirmNewPassword: confirmPasswordError,
     });
 
-    return !(currentPasswordError || newPasswordError || confirmPasswordError);
+    return !(newPasswordError || confirmPasswordError);
   };
 
   // Handle form submission
@@ -182,18 +182,10 @@ const ChangePassword: React.FC = () => {
                     type={showPassword ? "text" : "password"}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className={`px-3 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 border-gray-300 focus:outline-none ${
-                      errors.currentPassword
-                        ? "!border-red-500 !border"
-                        : "border-gray-300"
-                    }`}
+                    className={`px-3 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 border-gray-300 focus:outline-none 
+                     
+                    `}
                   />
-                  {errors.currentPassword && (
-                    <label className="text-[rgb(218,44,44)] text-[13px] mt-[5px] flex items-center">
-                      <ErrorImage />
-                      {errors.currentPassword}
-                    </label>
-                  )}
                 </div>
               </div>
 

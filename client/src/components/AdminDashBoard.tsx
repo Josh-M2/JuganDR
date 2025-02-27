@@ -760,6 +760,8 @@ const AdminDashboard: React.FC = () => {
     }
 
     if (nameSearch.trim() !== "") {
+      console.log("wew", nameSearch.trim());
+      console.log("wew2", nameSearch);
       const searchLower = nameSearch.trim().toLowerCase();
       filteredData = filteredData.filter(
         (item: data) =>
@@ -2623,6 +2625,8 @@ const AdminDashboard: React.FC = () => {
 
     deletePermanently && setLoadingDeletePermanently(true);
 
+    console.log(",asd", dataReleased);
+
     const formattedData = dataReleased.map((item) => {
       const fullName = ` ${toUpperCase(item.first_name)} ${toUpperCase(
         item.middle_name[0]
@@ -2799,7 +2803,7 @@ const AdminDashboard: React.FC = () => {
                 </label>
                 <Input
                   id="search"
-                  placeholder="Search by Name"
+                  placeholder="Search"
                   width="auto"
                   value={nameSearch}
                   onChange={(e) => {
