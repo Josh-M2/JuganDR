@@ -2,6 +2,10 @@
 
 # dependencies
 .env
+.env.local
+client/public/env.js
+.pnpm-store/
+server/data/
 client/.env
 server/node_modules
 server/.pnp
@@ -27,3 +31,5 @@ client/.env
 client/.env
 client/.env
 server/.env
+.neon
+node_modules/

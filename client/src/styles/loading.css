@@ -1,0 +1,135 @@
+.skeleton {
+  display: block;
+  max-width: 100%;
+  height: 1em;
+  border-radius: 6px;
+  background: linear-gradient(100deg, #e9efec 20%, #f7faf8 40%, #e9efec 60%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-line + .skeleton-line {
+  margin-top: 10px;
+}
+
+.skeleton-heading {
+  height: 27px;
+  margin-bottom: 20px;
+}
+
+.skeleton-metric {
+  height: 40px;
+  margin-top: 12px;
+}
+
+.skeleton-field {
+  height: 44px;
+  margin-top: 9px;
+}
+
+.skeleton-label {
+  height: 13px;
+}
+
+.skeleton-cell {
+  height: 15px;
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-row > .skeleton:last-child {
+  flex: 1;
+}
+
+.document-card-skeleton {
+  pointer-events: none;
+}
+
+.document-card-skeleton:hover {
+  transform: none;
+  border-color: #e0e9e5;
+  box-shadow: none;
+}
+
+.document-card-skeleton .skeleton-card-link {
+  margin-top: auto;
+}
+
+.document-card-skeleton > .skeleton:nth-child(2) {
+  margin: 21px 0 13px;
+}
+
+.document-card-skeleton > div {
+  margin-bottom: 24px;
+}
+
+.form-skeleton .page-heading > .skeleton {
+  margin-top: 14px;
+}
+
+.detail-skeleton .admin-heading > div > .skeleton + .skeleton {
+  margin-top: 11px;
+}
+
+.attachment-skeleton-row {
+  padding: 15px 0;
+  border-top: 1px solid #edf1ee;
+}
+
+.tracking-skeleton .skeleton-heading {
+  margin: 12px 0 16px;
+}
+
+.tracking-skeleton .skeleton-progress {
+  margin-top: 34px;
+  padding-top: 22px;
+  border-top: 1px solid #edf0ee;
+}
+
+.tracking-skeleton .skeleton-progress > .skeleton-row {
+  margin-top: 18px;
+}
+
+.detail-skeleton .detail-list > div {
+  min-width: 0;
+}
+
+.detail-skeleton .detail-list .skeleton + .skeleton {
+  margin-top: 8px;
+}
+
+.form-skeleton .field .skeleton-field {
+  width: 100%;
+}
+
+.button-spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -3px;
+  margin-right: 8px;
+  animation: button-spin 0.7s linear infinite;
+}
+
+@keyframes skeleton-shimmer {
+  to { background-position-x: -200%; }
+}
+
+@keyframes button-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .button-spinner {
+    animation: none;
+  }
+}

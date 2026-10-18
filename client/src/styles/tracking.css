@@ -1,0 +1,141 @@
+.track-search {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #e1e9e5;
+  padding: 18px;
+  border-radius: 12px;
+  margin-bottom: 23px;
+}
+.track-search .field {
+  flex: 1;
+}
+.tracking-card {
+  padding: 30px;
+}
+.tracking-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+.tracking-head h2 {
+  font-size: 24px;
+  margin: 10px 0;
+}
+.tracking-card h3 {
+  border-top: 1px solid #edf0ee;
+  padding-top: 25px;
+  margin: 26px 0 20px;
+}
+.tracking-help {
+  font-size: 13px;
+  color: #6a7b80;
+  line-height: 1.6;
+  border-top: 1px solid #edf0ee;
+  margin: 23px 0 0;
+  padding-top: 18px;
+}
+.info-panel {
+  padding: 28px;
+}
+.info-panel h2 {
+  margin-top: 0;
+}
+.info-panel p {
+  color: #6a7b80;
+}
+.timeline {
+  list-style: none;
+  padding: 0 0 0 4px;
+  margin: 0;
+}
+.timeline li {
+  position: relative;
+  border-left: 2px solid #d5e8e1;
+  padding: 0 0 25px 23px;
+}
+.timeline li:last-child {
+  border-left-color: transparent;
+  padding-bottom: 0;
+}
+.timeline-dot {
+  position: absolute;
+  left: -8px;
+  top: 1px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #0c8076;
+  border: 3px solid #d7efe8;
+}
+.timeline li > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+.timeline strong {
+  font-size: 14px;
+}
+.timeline time {
+  font-size: 12px;
+  color: #7a898d;
+}
+.timeline p {
+  font-size: 13px;
+  color: #65787d;
+  line-height: 1.5;
+  margin: 6px 0 0;
+}
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: 50px;
+  padding: 6px 11px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #e8f1f0;
+  color: #205d5b;
+}
+.status-submitted {
+  background: #edf1f7;
+  color: #536888;
+}
+.status-reviewing {
+  background: #fff3db;
+  color: #88611d;
+}
+.status-approved {
+  background: #e4f5ef;
+  color: #176e57;
+}
+.status-ready {
+  background: #ddf6ea;
+  color: #0d6f4a;
+}
+.status-released {
+  background: #e4edfc;
+  color: #345e9a;
+}
+.status-rejected {
+  background: #fce9e7;
+  color: #a63f39;
+}
+.text-link,
+.text-button {
+  color: #08766e;
+  font-weight: 750;
+  font-size: 13px;
+}
+.text-button {
+  border: 0;
+  background: none;
+  padding: 5px;
+}
+.text-link:hover,
+.text-button:hover {
+  text-decoration: underline;
+}

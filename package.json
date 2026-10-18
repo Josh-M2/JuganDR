@@ -1,0 +1,21 @@
+{
+  "name": "jugandr-workspace",
+  "private": true,
+  "packageManager": "pnpm@8.15.6",
+  "scripts": {
+    "setup:admin": "pnpm --dir server setup:admin",
+    "dev:client": "pnpm --dir client dev",
+    "dev:server": "pnpm --dir server dev",
+    "build": "pnpm --dir client build",
+    "typecheck": "pnpm --dir client typecheck",
+    "check:server": "pnpm --dir server check",
+    "db:migrate": "pnpm --dir server db:migrate",
+    "verify:neon": "pnpm --dir server verify:neon",
+    "seed:demo": "pnpm --dir server seed:demo",
+    "test": "pnpm --dir server test"
+  },
+  "dependencies": {
+    "@neon/config": "^1.9.2",
+    "@neon/env": "^1.6.3"
+  }
+}

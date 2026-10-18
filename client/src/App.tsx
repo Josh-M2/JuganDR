@@ -1,73 +1,44 @@
 import React from "react";
-import logo from "./logo.svg";
-import "./App.css";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import { ChakraProvider } from "@chakra-ui/react";
-import DocumentSelection from "./components/DocumentSelection";
-import Login from "./components/Login";
-import Main from "./components/Main";
-import AdminDashboard from "./components/AdminDashBoard";
-import EmailForChangePassword from "./components/EmailForChangePassword";
-import ChangePassword from "./components/ChangePassword";
+import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import Layout from "./shared/Layout";
+import HomePage from "./features/home/HomePage";
+import DocumentPicker from "./features/requests/DocumentPicker";
+import RequestForm from "./features/requests/RequestForm";
+import TrackPage from "./features/tracking/TrackPage";
+import AdminLogin from "./features/admin/AdminLogin";
+import AdminDashboard from "./features/admin/AdminDashboard";
+import AdminDetail from "./features/admin/AdminDetail";
 
-import FillUpIndigency from "./components/FillUpIndigency";
-import FillUpBarangayCertificate from "./components/FillUpBarangayCertificate";
-import FillUpBarangayClearance from "./components/FillUpBarangayClearance";
-import FillUpSeniorCitizenCertificate from "./components/FillUpSeniorCitizenCertificate";
-import FillUpBarangayBusinessPermit from "./components/FillUpBarangayBusinessPermit";
-import FillUpNoClaimsAndConflict from "./components/FillUpNoClaimsAndConflict";
-import FillUpBarangayResidency from "./components/FillUpBarangayResidency";
-import TrackDocument from "./components/TrackDocument";
-import ResetPassword from "./components/ResetPassword";
-
-function App() {
+export default function App() {
   return (
-    <ChakraProvider>
-      <Router>
-        <Routes>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<HomePage />} />
+          <Route path="request" element={<DocumentPicker />} />
+          <Route path="request/:typeId" element={<RequestForm />} />
+          <Route path="track" element={<TrackPage />} />
+          <Route path="track/:code" element={<TrackPage />} />
+          <Route path="admin/login" element={<AdminLogin />} />
+          <Route path="admin" element={<AdminDashboard />} />
+          <Route path="admin/requests/:id" element={<AdminDetail />} />
           <Route
-            path="/Selection of Documents"
-            element={<DocumentSelection />}
+            path="*"
+            element={
+              <main className="container page-space">
+                <div className="page-heading">
+                  <span className="eyebrow">404</span>
+                  <h1>Page not found</h1>
+                  <p>The page you requested is unavailable.</p>
+                  <Link to="/" className="button button-primary">
+                    Return home
+                  </Link>
+                </div>
+              </main>
+            }
           />
-          <Route path="/Sign in for Admin" element={<Login />} />
-          <Route path="/" element={<Main />} />
-          <Route path="/Barangay Indigency" element={<FillUpIndigency />} />
-          <Route
-            path="/Barangay Certificate"
-            element={<FillUpBarangayCertificate />}
-          />
-          <Route
-            path="/Barangay Clearance"
-            element={<FillUpBarangayClearance />}
-          />
-          <Route
-            path="/Senior Citizen Certificate"
-            element={<FillUpSeniorCitizenCertificate />}
-          />
-          <Route
-            path="/Barangay Business Permit"
-            element={<FillUpBarangayBusinessPermit />}
-          />
-          <Route
-            path="/No Claims And Conflict"
-            element={<FillUpNoClaimsAndConflict />}
-          />
-          <Route
-            path="/Barangay Residency"
-            element={<FillUpBarangayResidency />}
-          />
-          <Route path="/Track Document" element={<TrackDocument />} />
-          <Route path="/Admin Dashboard" element={<AdminDashboard />} />
-          <Route path="/reset-password" element={<ChangePassword />} />
-          <Route
-            path="/email-reset-password"
-            element={<EmailForChangePassword />}
-          />
-          <Route path="/reset password" element={<ResetPassword />} />
-        </Routes>
-      </Router>
-    </ChakraProvider>
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;
