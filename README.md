@@ -17,6 +17,16 @@ pnpm run setup:admin
 
 The setup command creates the ignored `server/.env` file with a local administrator email, generated password, and session secret. Open that file to read the password. Keep it private. It does not overwrite an existing file. For connected Neon mode, complete the Neon backend steps below before starting the services.
 
+### Portfolio demo admin login
+
+The configured portfolio demo uses this shared account at `/admin/login`:
+
+| Email | Password |
+| --- | --- |
+| `joshuamagdada@gmail.com` | `123123123123123` |
+
+There is no admin sign-up page. These credentials are for the demo with fictional data. A fresh clone running `pnpm setup:admin` gets a different, randomly generated password; check its ignored `server/.env`, or set `ADMIN_EMAIL` and `ADMIN_PASSWORD` there to match the demo account above. Keep `SESSION_SECRET` private and use different credentials for any real deployment.
+
 Start the services in two terminals:
 
 ```sh
@@ -74,7 +84,7 @@ The browser bundle uses React, React Router, and plain CSS. Supabase and browser
 
 ## Configuration and security
 
-- `server/.env` contains admin credentials and must stay private. To change credentials, edit that file and restart the server. Existing sessions will expire when the session secret changes.
+- `server/.env` contains the private session secret and any locally configured admin credentials; never commit that file. The shared portfolio demo login above is intentionally public. To change credentials, edit `server/.env` and restart the server. Existing sessions will expire when the session secret changes.
 - Set `CHROME_PATH` in `server/.env` if Chrome or Chromium is installed elsewhere. The health endpoint reports whether the configured binary is available.
 - Attachments live in a private Neon bucket, and the API requires an admin session to download them. Local mode uses files outside the client with restricted permissions.
 - The public tracker only accepts a tracking code and returns status information. It does not return the applicant's name, mobile number, or uploaded files.
